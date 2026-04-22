@@ -1,5 +1,8 @@
 <template>
   <div>
+    <!-- Scroll Frame Animation -->
+    <ScrollFrameScene />
+
     <!-- Hero Carousel -->
     <HeroCarousel />
 
@@ -160,6 +163,7 @@
 import { ref, onMounted } from 'vue'
 import HeroCarousel from '../components/HeroCarousel.vue'
 import LightboxModal from '../components/LightboxModal.vue'
+import ScrollFrameScene from '../components/ScrollFrameScene.vue'
 import { useGallery } from '../composables/useGallery.js'
 
 const { load, getFeatured } = useGallery()
