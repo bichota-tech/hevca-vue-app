@@ -2,39 +2,41 @@
   <Transition name="scene-fade" @after-leave="onSceneHidden">
     <div
       v-if="visible"
-      class="scroll-scene"
-      @wheel.prevent="handleWheel"
-      @touchstart.passive="handleTouchStart"
-      @touchmove.prevent="handleTouchMove"
+      class="scroll-scene-overlay"
+      ref="overlayRef"
     >
-      <!-- Canvas encuadrado (no full-bleed) -->
-      <div class="canvas-frame">
-        <canvas ref="canvasRef" class="frame-canvas" />
-        <div class="canvas-vignette" />
-      </div>
+      <div class="scroll-spacer" ref="spacerRef"></div>
 
-      <!-- Labels de servicios -->
-      <div class="service-labels">
-        <Transition name="label-fade" mode="out-in">
-          <div v-if="activeLabel" :key="activeLabel" class="service-label">
-            <span class="label-eyebrow">Servicios</span>
-            <h2 class="label-title">{{ activeLabel }}</h2>
-            <div class="label-line" />
-          </div>
-        </Transition>
-      </div>
+      <div class="scroll-scene-pinned">
+        <!-- Canvas encuadrado -->
+        <div class="canvas-frame">
+          <canvas ref="canvasRef" class="frame-canvas" />
+          <div class="canvas-vignette" />
+        </div>
 
-      <!-- Indicador de scroll -->
-      <div class="scroll-hint" :class="{ 'is-hidden': progress > 0.04 }">
-        <span class="hint-text">Scroll</span>
-        <svg width="18" height="26" viewBox="0 0 18 26" fill="none">
-          <path d="M9 1v16M9 17l-5-5M9 17l5-5" stroke="#bc9536" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </div>
+        <!-- Labels de servicios -->
+        <div class="service-labels">
+          <Transition name="label-fade" mode="out-in">
+            <div v-if="activeLabel" :key="activeLabel" class="service-label">
+              <span class="label-eyebrow">Servicios</span>
+              <h2 class="label-title">{{ activeLabel }}</h2>
+              <div class="label-line" />
+            </div>
+          </Transition>
+        </div>
 
-      <!-- Barra de progreso -->
-      <div class="progress-track">
-        <div class="progress-fill" :style="{ width: `${progress * 100}%` }" />
+        <!-- Indicador de scroll -->
+        <div class="scroll-hint" :class="{ 'is-hidden': progress > 0.04 }">
+          <span class="hint-text">Scroll</span>
+          <svg width="18" height="26" viewBox="0 0 18 26" fill="none">
+            <path d="M9 1v16M9 17l-5-5M9 17l5-5" stroke="#bc9536" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+
+        <!-- Barra de progreso -->
+        <div class="progress-track">
+          <div class="progress-fill" :style="{ width: `${progress * 100}%` }" />
+        </div>
       </div>
     </div>
   </Transition>
@@ -42,15 +44,15 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import gsap from 'gsap'
+import ScrollTrigger from 'gsap/ScrollTrigger'
 
-// Flag de módulo: persiste entre navegaciones Vue Router pero
-// se resetea en cada recarga completa de la página.
+gsap.registerPlugin(ScrollTrigger)
+
 let _introShown = false
 
-// ── Constantes ─────────────────────────────────────────────────
 const TOTAL_FRAMES = 21
 const BASE_PATH    = '/Canon_SL2_webP/'
-const SCROLL_RANGE = 2400  // deltaY total para recorrer todos los frames
 
 const SEGMENTS = [
   { from: 4,  to: 8,  label: 'Retrato Corporativo'   },
@@ -59,22 +61,20 @@ const SEGMENTS = [
   { from: 16, to: 21, label: 'Eventos & Especiales'  },
 ]
 
-// ── Estado reactivo ────────────────────────────────────────────
-const canvasRef = ref(null)
-// Si el intro ya se mostró en esta sesión JS, arranca oculto
-const visible   = ref(!_introShown)
-const progress  = ref(0)
+const visible    = ref(!_introShown)
+const progress   = ref(0)
+const canvasRef  = ref(null)
+const overlayRef = ref(null)
+const spacerRef  = ref(null)
 
-// ── Estado interno (no reactivo) ──────────────────────────────
 let frames       = []
 let ctx          = null
 let loaded       = false
 let lastDrawnIdx = -1
-let accumulated  = 0
-let touchStartY  = 0
 let leaving      = false
+let timeline     = null
+let scrollTriggerInstance = null
 
-// ── Label activo ──────────────────────────────────────────────
 const activeLabel = computed(() => {
   const f = Math.floor(progress.value * TOTAL_FRAMES) + 1
   for (const seg of SEGMENTS) {
@@ -83,28 +83,28 @@ const activeLabel = computed(() => {
   return null
 })
 
-// ── Dibujo con object-fit: cover simulado ─────────────────────
 function drawFrame(index) {
   if (!ctx || !canvasRef.value) return
   const img = frames[index]
   if (!img?.naturalWidth) return
 
-  // Usar dimensiones LÓGICAS del contenedor (no las del canvas × DPR)
   const frame = canvasRef.value.parentElement
   const cw = frame ? frame.clientWidth  : canvasRef.value.width
   const ch = frame ? frame.clientHeight : canvasRef.value.height
   if (!cw || !ch) return
 
-  const scale = Math.max(cw / img.naturalWidth, ch / img.naturalHeight)
-  const sw = cw / scale
-  const sh = ch / scale
-  const sx = (img.naturalWidth  - sw) / 2
-  const sy = (img.naturalHeight - sh) / 2
+  // Usar Math.min para COMPORTAMIENTO CONTAIN (Muestra todo el frame)
+  const scale = Math.min(cw / img.naturalWidth, ch / img.naturalHeight)
+  
+  const sw = img.naturalWidth * scale
+  const sh = img.naturalHeight * scale
+  const sx = (cw - sw) / 2
+  const sy = (ch - sh) / 2
+  
   ctx.clearRect(0, 0, cw, ch)
-  ctx.drawImage(img, sx, sy, sw, sh, 0, 0, cw, ch)
+  ctx.drawImage(img, 0, 0, img.naturalWidth, img.naturalHeight, sx, sy, sw, sh)
 }
 
-// ── Precarga ──────────────────────────────────────────────────
 async function preloadFrames() {
   frames = await Promise.all(
     Array.from({ length: TOTAL_FRAMES }, (_, i) =>
@@ -118,68 +118,34 @@ async function preloadFrames() {
   )
 }
 
-// ── Aplicar delta de scroll ───────────────────────────────────
-function applyDelta(delta) {
-  if (leaving) return
-  accumulated    = Math.max(0, Math.min(SCROLL_RANGE, accumulated + delta))
-  progress.value = accumulated / SCROLL_RANGE
-  const idx = Math.min(TOTAL_FRAMES - 1, Math.floor(progress.value * TOTAL_FRAMES))
-  if (idx !== lastDrawnIdx) {
-    drawFrame(idx)
-    lastDrawnIdx = idx
-  }
-  if (progress.value >= 1) {
-    leaving = true
-    visible.value = false
-  }
-}
-
-// ── Handlers de eventos ───────────────────────────────────────
-function handleWheel(e)       { applyDelta(e.deltaY) }
-function handleTouchStart(e)  { touchStartY = e.touches[0].clientY }
-function handleTouchMove(e)   {
-  const delta = touchStartY - e.touches[0].clientY
-  touchStartY  = e.touches[0].clientY
-  applyDelta(delta * 2)
-}
-
-// ── Resize canvas con soporte HiDPI/Retina ────────────────────
 function resizeCanvas() {
   if (!canvasRef.value) return
-  // Leer dimensiones del CONTENEDOR, no del canvas (más fiable)
   const frame = canvasRef.value.parentElement
   if (!frame) return
   const w = frame.clientWidth
   const h = frame.clientHeight
   if (!w || !h) return
 
-  // HiDPI: multiplicar por devicePixelRatio para evitar borrosidad en Retina
-  const dpr = Math.min(window.devicePixelRatio || 1, 2) // cap a 2x
+  const dpr = Math.min(window.devicePixelRatio || 1, 2)
   canvasRef.value.width  = Math.round(w * dpr)
   canvasRef.value.height = Math.round(h * dpr)
 
-  // Escalar el contexto para que drawImage use coordenadas lógicas
   if (ctx) ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
 
-  if (loaded) {
-    const idx = Math.min(TOTAL_FRAMES - 1, Math.floor(progress.value * TOTAL_FRAMES))
-    drawFrame(idx)
+  if (loaded && !leaving) {
+    drawFrame(Math.max(0, lastDrawnIdx))
   }
 }
 
-// ── Callback tras ocultarse el componente ─────────────────────
 function onSceneHidden() {
-  _introShown = true   // marcar: ya se mostró en esta sesión
+  _introShown = true
   document.body.style.overflow     = ''
   document.body.style.paddingRight = ''
 }
 
-// ── Lifecycle ─────────────────────────────────────────────────
 onMounted(async () => {
-  // Si el intro ya se mostró, no hacer nada
   if (_introShown) return
 
-  // Bloquear scroll de la página mientras el overlay está activo
   const sbWidth = window.innerWidth - document.documentElement.clientWidth
   document.body.style.overflow = 'hidden'
   if (sbWidth > 0) document.body.style.paddingRight = `${sbWidth}px`
@@ -189,46 +155,98 @@ onMounted(async () => {
   await preloadFrames()
   loaded = true
 
-  // Esperar un frame para que el DOM esté pintado y el canvas tenga tamaño
   requestAnimationFrame(() => {
-    ctx = canvasRef.value?.getContext('2d')
+    if (!canvasRef.value) return
+    ctx = canvasRef.value.getContext('2d')
     resizeCanvas()
     drawFrame(0)
+
+    // Configurar GSAP ScrollTrigger
+    const playhead = { frame: 0 }
+    
+    timeline = gsap.to(playhead, {
+      frame: TOTAL_FRAMES - 1,
+      ease: 'none',
+      scrollTrigger: {
+        scroller: overlayRef.value,
+        trigger: spacerRef.value,
+        start: 'top top',
+        end: 'bottom bottom',
+        scrub: 1, // Suavizado de inercia
+        onUpdate: (self) => {
+          progress.value = self.progress
+        }
+      },
+      onUpdate: () => {
+        const idx = Math.round(playhead.frame)
+        if (idx !== lastDrawnIdx) {
+          drawFrame(idx)
+          lastDrawnIdx = idx
+        }
+        
+        // Cuando llega casi al final, cerrar la escena automáticamente
+        if (playhead.frame >= TOTAL_FRAMES - 1 - 0.01) {
+          if (!leaving) {
+            leaving = true
+            visible.value = false
+            // Limpiar ScrollTrigger para evitar callbacks extra
+            if (scrollTriggerInstance) scrollTriggerInstance.kill()
+          }
+        }
+      }
+    })
+    
+    scrollTriggerInstance = ScrollTrigger.getById(timeline.scrollTrigger?.id)
   })
 })
 
 onUnmounted(() => {
   window.removeEventListener('resize', resizeCanvas)
+  if (scrollTriggerInstance) scrollTriggerInstance.kill()
+  if (timeline) timeline.kill()
   document.body.style.overflow     = ''
   document.body.style.paddingRight = ''
 })
 </script>
 
 <style scoped>
-/* ── Overlay fixed fullscreen ─────────────────────────────────── */
-.scroll-scene {
+.scroll-scene-overlay {
   position: fixed;
   inset: 0;
-  /* z-index menor que el AppHeader (z-50 = 50) para que el nav quede visible */
   z-index: 30;
   background: #0d0d0d;
+  overflow-y: auto;
+  overflow-x: hidden;
   overscroll-behavior: contain;
 }
 
-/* ── Fade out del scene completo ──────────────────────────────── */
+/* Espaciador que da altura para hacer scroll */
+.scroll-spacer {
+  height: 350vh; /* Altura total de la escena */
+  width: 100%;
+}
+
+/* Elemento sticky que siempre está visible mientras haces scroll por el spacer */
+.scroll-scene-pinned {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  width: 100%;
+  overflow: hidden;
+}
+
 .scene-fade-leave-active { transition: opacity 1.3s cubic-bezier(0.4, 0, 0.2, 1); }
 .scene-fade-leave-to     { opacity: 0; }
 
-/* ── Canvas frame — responsivo por breakpoints ────────────────── */
 .canvas-frame {
   position: absolute;
-  /* Mobile: ocupa desde el header hasta el borde inferior */
   top: 4rem;
   left: 0;
   right: 0;
   bottom: 0;
   overflow: hidden;
-  background-color: white;
+  /* El background transparent es importante aquí */
+  background-color: transparent;
 }
 
 .frame-canvas {
@@ -237,11 +255,10 @@ onUnmounted(() => {
   display: block;
 }
 
-/* ── Viñeta sutil dentro del encuadre ────────────────────────── */
 .canvas-vignette {
   position: absolute;
   inset: 0;
- background: linear-gradient(
+  background: linear-gradient(
     to bottom,
     rgba(13,13,13,0.20) 0%,
     transparent 18%,
@@ -251,7 +268,6 @@ onUnmounted(() => {
   pointer-events: none;
 }
 
-/* ── Labels de servicios ─────────────────────────────────────── */
 .service-labels {
   position: absolute;
   inset: 0;
@@ -298,14 +314,9 @@ onUnmounted(() => {
   background: linear-gradient(90deg, transparent, #bc9536, transparent);
 }
 
-/* ── Slide-up + fade de labels ────────────────────────────────── */
-/* ENTRADA: sube desde abajo con opacity — ease-in-out puro */
 .label-fade-enter-active {
-  transition:
-    opacity   0.8s ease-in-out,
-    transform 0.8s ease-in-out;
+  transition: opacity 0.8s ease-in-out, transform 0.8s ease-in-out;
 }
-/* SALIDA: solo desvanece sin movimiento */
 .label-fade-leave-active {
   transition: opacity 0.5s ease-in-out;
 }
@@ -320,7 +331,6 @@ onUnmounted(() => {
 .label-fade-leave-from { opacity: 1; }
 .label-fade-leave-to   { opacity: 0; }
 
-/* ── Scroll hint ─────────────────────────────────────────────── */
 .scroll-hint {
   position: absolute;
   bottom: 6rem;
@@ -352,7 +362,6 @@ onUnmounted(() => {
   50%       { transform: translateY(7px); }
 }
 
-/* ── Barra de progreso ───────────────────────────────────────── */
 .progress-track {
   position: absolute;
   bottom: 0;
