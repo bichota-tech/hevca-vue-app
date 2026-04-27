@@ -1,20 +1,17 @@
 <template>
-  <Transition name="scene-fade" @after-leave="onSceneHidden">
-    <div
-      v-if="visible"
-      class="scroll-scene-overlay"
-      ref="overlayRef"
-    >
-      <div class="scroll-spacer" ref="spacerRef"></div>
-
+  <div
+    v-if="visible"
+    class="scroll-scene-overlay"
+    ref="overlayRef"
+  >
+    <div class="scroll-spacer" ref="spacerRef">
       <div class="scroll-scene-pinned">
-        <!-- Canvas encuadrado -->
-        <div class="canvas-frame">
+
+        <div class="canvas-frame" ref="frameRef">
           <canvas ref="canvasRef" class="frame-canvas" />
-          <div class="canvas-vignette" />
+          <div class="canvas-vignette" ref="vignetteRef" />
         </div>
 
-        <!-- Labels de servicios -->
         <div class="service-labels">
           <Transition name="label-fade" mode="out-in">
             <div v-if="activeLabel" :key="activeLabel" class="service-label">
@@ -25,21 +22,20 @@
           </Transition>
         </div>
 
-        <!-- Indicador de scroll -->
-        <div class="scroll-hint" :class="{ 'is-hidden': progress > 0.04 }">
+        <div class="scroll-hint" ref="hintRef" :class="{ 'is-hidden': progress > 0.04 }">
           <span class="hint-text">Scroll</span>
           <svg width="18" height="26" viewBox="0 0 18 26" fill="none">
             <path d="M9 1v16M9 17l-5-5M9 17l5-5" stroke="#bc9536" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
         </div>
 
-        <!-- Barra de progreso -->
         <div class="progress-track">
           <div class="progress-fill" :style="{ width: `${progress * 100}%` }" />
         </div>
+
       </div>
     </div>
-  </Transition>
+  </div>
 </template>
 
 <script setup>
@@ -53,27 +49,36 @@ let _introShown = false
 
 const TOTAL_FRAMES = 21
 const BASE_PATH    = '/Canon_SL2_png/'
+function frameName(i) { return `${BASE_PATH}Frame${i + 1}.png` }
 
 const SEGMENTS = [
-  { from: 4,  to: 8,  label: 'Retrato Corporativo'   },
-  { from: 8,  to: 12, label: 'Fotografía Comercial'  },
-  { from: 12, to: 16, label: 'Boudoir & Artístico'   },
-  { from: 16, to: 21, label: 'Eventos & Especiales'  },
+  { from: 4,  to: 8,  label: 'Retrato Corporativo'  },
+  { from: 8,  to: 12, label: 'Fotografía Comercial' },
+  { from: 12, to: 16, label: 'Boudoir & Artístico'  },
+  { from: 16, to: 21, label: 'Eventos & Especiales' },
 ]
 
 const visible    = ref(!_introShown)
 const progress   = ref(0)
 const canvasRef  = ref(null)
+const frameRef   = ref(null)
 const overlayRef = ref(null)
 const spacerRef  = ref(null)
+const vignetteRef = ref(null)
+const hintRef    = ref(null)
 
 let frames       = []
 let ctx          = null
 let loaded       = false
-let lastDrawnIdx = -1
 let leaving      = false
-let timeline     = null
-let scrollTriggerInstance = null
+let logW = 0, logH = 0
+
+// Frame suavizado: target viene del ScrollTrigger, current se lerp via ticker
+let frameTarget  = 0
+let frameCurrent = 0
+let lastDrawnIdx = -1
+
+let st = null, zoomST = null, tween = null
 
 const activeLabel = computed(() => {
   const f = Math.floor(progress.value * TOTAL_FRAMES) + 1
@@ -83,66 +88,184 @@ const activeLabel = computed(() => {
   return null
 })
 
+// ─── Dibujar frame ────────────────────────────────────────────────────────────
 function drawFrame(index) {
-  if (!ctx || !canvasRef.value) return
+  if (!ctx || !logW || !logH) return
   const img = frames[index]
   if (!img?.naturalWidth) return
 
-  const frame = canvasRef.value.parentElement
-  const cw = frame ? frame.clientWidth  : canvasRef.value.width
-  const ch = frame ? frame.clientHeight : canvasRef.value.height
-  if (!cw || !ch) return
+  // Degradado radial: #bc9536 en el centro → #0d0d0d en los bordes
+  // Se crea en cada frame porque las dimensiones pueden cambiar tras un resize
+  const cx = logW / 2
+  const cy = logH / 2
+  // Radio hasta la esquina más lejana para cubrir toda el área
+  const r  = Math.sqrt(cx * cx + cy * cy)
 
-  // Usar Math.min para COMPORTAMIENTO CONTAIN (Muestra todo el frame)
-  const scale = Math.min(cw / img.naturalWidth, ch / img.naturalHeight)
-  
-  const sw = img.naturalWidth * scale
+  const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, r)
+  grad.addColorStop(0,    '#c9a23e')   // oro cálido en el centro (ligeramente más claro)
+  grad.addColorStop(0.35, '#7a5e22')   // transición dorada media
+  grad.addColorStop(0.65, '#2e2008')   // marrón oscuro
+  grad.addColorStop(1,    '#0d0d0d')   // funde con el fondo de la página
+
+  ctx.fillStyle = grad
+  ctx.fillRect(0, 0, logW, logH)
+
+  const scale = Math.min(logW / img.naturalWidth, logH / img.naturalHeight)
+  const sw = img.naturalWidth  * scale
   const sh = img.naturalHeight * scale
-  const sx = (cw - sw) / 2
-  const sy = (ch - sh) / 2
-  
-  ctx.clearRect(0, 0, cw, ch)
+  const sx = (logW - sw) / 2
+  const sy = (logH - sh) / 2
   ctx.drawImage(img, 0, 0, img.naturalWidth, img.naturalHeight, sx, sy, sw, sh)
 }
 
+// ─── GSAP Ticker: interpola frameCurrent → frameTarget ───────────────────────
+// Esto suaviza los saltos entre los 21 frames discretos
+function onTick() {
+  if (!loaded || leaving) return
+  frameCurrent += (frameTarget - frameCurrent) * 0.18
+  const idx = Math.min(TOTAL_FRAMES - 1, Math.max(0, Math.round(frameCurrent)))
+  if (idx !== lastDrawnIdx) {
+    drawFrame(idx)
+    lastDrawnIdx = idx
+  }
+}
+
+// ─── Precarga ─────────────────────────────────────────────────────────────────
 async function preloadFrames() {
   frames = await Promise.all(
     Array.from({ length: TOTAL_FRAMES }, (_, i) =>
       new Promise(resolve => {
         const img = new Image()
-        img.src = `${BASE_PATH}Frame${i + 1}.png`
+        img.src = frameName(i)
         img.onload  = () => resolve(img)
-        img.onerror = () => resolve(img)
+        img.onerror = () => { console.warn(`No se cargó: ${img.src}`); resolve(img) }
       })
     )
   )
 }
 
+// ─── Resize canvas ────────────────────────────────────────────────────────────
 function resizeCanvas() {
-  if (!canvasRef.value) return
-  const frame = canvasRef.value.parentElement
-  if (!frame) return
-  const w = frame.clientWidth
-  const h = frame.clientHeight
+  if (!canvasRef.value || !frameRef.value) return
+  const cs = window.getComputedStyle(frameRef.value)
+  const pL = parseFloat(cs.paddingLeft)   || 0
+  const pR = parseFloat(cs.paddingRight)  || 0
+  const pT = parseFloat(cs.paddingTop)    || 0
+  const pB = parseFloat(cs.paddingBottom) || 0
+  const w = frameRef.value.clientWidth  - pL - pR
+  const h = frameRef.value.clientHeight - pT - pB
   if (!w || !h) return
 
+  logW = w; logH = h
   const dpr = Math.min(window.devicePixelRatio || 1, 2)
+  canvasRef.value.style.width  = `${w}px`
+  canvasRef.value.style.height = `${h}px`
   canvasRef.value.width  = Math.round(w * dpr)
   canvasRef.value.height = Math.round(h * dpr)
+  ctx = canvasRef.value.getContext('2d', { alpha: false })
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
 
-  if (ctx) ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-
-  if (loaded && !leaving) {
-    drawFrame(Math.max(0, lastDrawnIdx))
-  }
+  if (loaded && !leaving) drawFrame(Math.max(0, lastDrawnIdx))
 }
 
 function onSceneHidden() {
   _introShown = true
-  document.body.style.overflow     = ''
+  document.body.style.overflow = ''
   document.body.style.paddingRight = ''
 }
 
+// ─── Animación de entrada ─────────────────────────────────────────────────────
+function playIntro() {
+  // Canvas: aparece con fade + ligero scale up
+  gsap.fromTo(canvasRef.value,
+    { opacity: 0, scale: 0.94 },
+    { opacity: 1, scale: 1, duration: 1.4, ease: 'power3.out', delay: 0.1 }
+  )
+  // Viñeta: se intensifica al entrar
+  gsap.fromTo(vignetteRef.value,
+    { opacity: 0 },
+    { opacity: 1, duration: 1.8, ease: 'power2.out' }
+  )
+  // Hint: entra después
+  if (hintRef.value) {
+    gsap.fromTo(hintRef.value,
+      { opacity: 0, y: 12 },
+      { opacity: 1, y: 0, duration: 1, ease: 'power2.out', delay: 0.8 }
+    )
+  }
+}
+
+// ─── Zoom parallax ─────────────────────────────────────────────────────────────
+// El canvas-frame hace un zoom suave (1 → 1.06) a lo largo de todo el scroll
+function setupZoom() {
+  zoomST = gsap.to(frameRef.value, {
+    scale: 1.06,
+    ease: 'none',
+    scrollTrigger: {
+      scroller : overlayRef.value,
+      trigger  : spacerRef.value,
+      start    : 'top top',
+      end      : 'bottom bottom',
+      scrub    : 3,           // más lento que los frames → efecto parallax
+    }
+  })
+}
+
+// ─── ScrollTrigger principal (frames) ─────────────────────────────────────────
+function setupScrollTrigger() {
+  tween = gsap.to({ v: 0 }, {
+    v: TOTAL_FRAMES - 1,
+    ease: 'none',
+    scrollTrigger: {
+      scroller : overlayRef.value,
+      trigger  : spacerRef.value,
+      start    : 'top top',
+      end      : 'bottom bottom',
+      scrub    : 1.5,
+      onUpdate(self) {
+        progress.value = self.progress
+        // Actualizar el target — el ticker lo interpola suavemente
+        frameTarget = self.progress * (TOTAL_FRAMES - 1)
+
+        // Al llegar al final → salida cinematográfica
+        if (self.progress >= 0.97 && !leaving) {
+          leaving = true
+          exitScene()
+        }
+      },
+    },
+  })
+  st = tween.scrollTrigger
+}
+
+// ─── Salida con GSAP ──────────────────────────────────────────────────────────
+function exitScene() {
+  // Matar scroll triggers para que no sigan disparando
+  requestAnimationFrame(() => {
+    st?.kill()
+    zoomST?.scrollTrigger?.kill()
+  })
+
+  // Animar salida: scale down + fade
+  gsap.to(canvasRef.value, {
+    scale  : 0.96,
+    opacity: 0,
+    duration: 0.7,
+    ease   : 'power2.in',
+  })
+  gsap.to(overlayRef.value, {
+    opacity : 0,
+    duration: 1.2,
+    ease    : 'power2.inOut',
+    delay   : 0.2,
+    onComplete() {
+      visible.value = false
+      onSceneHidden()
+    }
+  })
+}
+
+// ─── Lifecycle ────────────────────────────────────────────────────────────────
 onMounted(async () => {
   if (_introShown) return
 
@@ -156,55 +279,30 @@ onMounted(async () => {
   loaded = true
 
   requestAnimationFrame(() => {
-    if (!canvasRef.value) return
-    ctx = canvasRef.value.getContext('2d')
+    if (overlayRef.value) overlayRef.value.scrollTop = 0
+
     resizeCanvas()
     drawFrame(0)
+    lastDrawnIdx = 0
+    frameCurrent = 0
+    frameTarget  = 0
 
-    // Configurar GSAP ScrollTrigger
-    const playhead = { frame: 0 }
-    
-    timeline = gsap.to(playhead, {
-      frame: TOTAL_FRAMES - 1,
-      ease: 'none',
-      scrollTrigger: {
-        scroller: overlayRef.value,
-        trigger: spacerRef.value,
-        start: 'top top',
-        end: 'bottom bottom',
-        scrub: 1, // Suavizado de inercia
-        onUpdate: (self) => {
-          progress.value = self.progress
-        }
-      },
-      onUpdate: () => {
-        const idx = Math.round(playhead.frame)
-        if (idx !== lastDrawnIdx) {
-          drawFrame(idx)
-          lastDrawnIdx = idx
-        }
-        
-        // Cuando llega casi al final, cerrar la escena automáticamente
-        if (playhead.frame >= TOTAL_FRAMES - 1 - 0.01) {
-          if (!leaving) {
-            leaving = true
-            visible.value = false
-            // Limpiar ScrollTrigger para evitar callbacks extra
-            if (scrollTriggerInstance) scrollTriggerInstance.kill()
-          }
-        }
-      }
-    })
-    
-    scrollTriggerInstance = ScrollTrigger.getById(timeline.scrollTrigger?.id)
+    // Activar ticker GSAP para interpolación suave de frames
+    gsap.ticker.add(onTick)
+
+    playIntro()
+    setupScrollTrigger()
+    setupZoom()
   })
 })
 
 onUnmounted(() => {
   window.removeEventListener('resize', resizeCanvas)
-  if (scrollTriggerInstance) scrollTriggerInstance.kill()
-  if (timeline) timeline.kill()
-  document.body.style.overflow     = ''
+  gsap.ticker.remove(onTick)
+  st?.kill()
+  zoomST?.scrollTrigger?.kill()
+  tween?.kill()
+  document.body.style.overflow = ''
   document.body.style.paddingRight = ''
 })
 </script>
@@ -218,15 +316,24 @@ onUnmounted(() => {
   overflow-y: auto;
   overflow-x: hidden;
   overscroll-behavior: contain;
+  scroll-behavior: auto;
+  /* Ocultar scrollbar — Firefox */
+  scrollbar-width: none;
+  /* Ocultar scrollbar — IE / Edge legacy */
+  -ms-overflow-style: none;
+}
+/* Ocultar scrollbar — Chrome / Safari / Opera */
+.scroll-scene-overlay::-webkit-scrollbar {
+  display: none;
 }
 
-/* Espaciador que da altura para hacer scroll */
+/* Spacer con el sticky dentro */
 .scroll-spacer {
-  height: 350vh; /* Altura total de la escena */
+  height: 400vh;
+  position: relative;
   width: 100%;
 }
 
-/* Elemento sticky que siempre está visible mientras haces scroll por el spacer */
 .scroll-scene-pinned {
   position: sticky;
   top: 0;
@@ -235,39 +342,53 @@ onUnmounted(() => {
   overflow: hidden;
 }
 
-.scene-fade-leave-active { transition: opacity 1.3s cubic-bezier(0.4, 0, 0.2, 1); }
-.scene-fade-leave-to     { opacity: 0; }
-
+/* Marco del canvas — sin padding porque el gradiente funde con el fondo */
 .canvas-frame {
   position: absolute;
-  top: 4rem;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Padding mínimo solo para respetar el header */
+  padding: 3.5rem 0 0;
+  box-sizing: border-box;
+  background: transparent;
   overflow: hidden;
-  /* El background transparent es importante aquí */
-  background-color: transparent;
+  transform-origin: center center;
 }
 
+/*
+  Canvas sin borde ni sombra — los bordes del gradiente se funden con #0d0d0d.
+  El tamaño CSS lo asigna JS via inline style.
+*/
 .frame-canvas {
-  width: 100%;
-  height: 100%;
   display: block;
+  /* Sin background CSS: el gradiente lo pinta el JS en cada frame */
+  background: transparent;
+  transform-origin: center center;
+  will-change: transform, opacity;
 }
 
+/*
+  Viñeta extra: refuerza el fundido en los cuatro bordes para que el canvas
+  se integre perfectamente con el fondo #0d0d0d de la página.
+*/
 .canvas-vignette {
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    to bottom,
-    rgba(13,13,13,0.20) 0%,
-    transparent 18%,
-    transparent 72%,
-    rgba(13,13,13,0.55) 100%
-  ); 
+  background:
+    /* Borde superior (header area) */
+    linear-gradient(to bottom,  rgba(13,13,13,0.85) 0%, transparent 12%),
+    /* Borde inferior */
+    linear-gradient(to top,     rgba(13,13,13,0.60) 0%, transparent 20%),
+    /* Borde izquierdo */
+    linear-gradient(to right,   rgba(13,13,13,0.45) 0%, transparent 15%),
+    /* Borde derecho */
+    linear-gradient(to left,    rgba(13,13,13,0.45) 0%, transparent 15%);
   pointer-events: none;
 }
 
+/* Labels */
 .service-labels {
   position: absolute;
   inset: 0;
@@ -284,10 +405,10 @@ onUnmounted(() => {
   align-items: center;
   gap: 0.7rem;
   padding: 1.5rem 3rem;
-  background: rgba(13, 13, 13, 0.52);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(188, 149, 54, 0.28);
+  background: rgba(13, 13, 13, 0.55);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(188, 149, 54, 0.30);
   text-align: center;
 }
 
@@ -314,23 +435,14 @@ onUnmounted(() => {
   background: linear-gradient(90deg, transparent, #bc9536, transparent);
 }
 
-.label-fade-enter-active {
-  transition: opacity 0.8s ease-in-out, transform 0.8s ease-in-out;
-}
-.label-fade-leave-active {
-  transition: opacity 0.5s ease-in-out;
-}
-.label-fade-enter-from {
-  opacity: 0;
-  transform: translateY(28px);
-}
-.label-fade-enter-to {
-  opacity: 1;
-  transform: translateY(0);
-}
-.label-fade-leave-from { opacity: 1; }
-.label-fade-leave-to   { opacity: 0; }
+.label-fade-enter-active { transition: opacity 0.8s ease-in-out, transform 0.8s ease-in-out; }
+.label-fade-leave-active { transition: opacity 0.5s ease-in-out; }
+.label-fade-enter-from   { opacity: 0; transform: translateY(24px); }
+.label-fade-enter-to     { opacity: 1; transform: translateY(0); }
+.label-fade-leave-from   { opacity: 1; }
+.label-fade-leave-to     { opacity: 0; }
 
+/* Scroll hint */
 .scroll-hint {
   position: absolute;
   bottom: 6rem;
@@ -342,8 +454,9 @@ onUnmounted(() => {
   gap: 0.5rem;
   z-index: 10;
   transition: opacity 0.8s ease;
+  will-change: opacity, transform;
 }
-.scroll-hint.is-hidden { opacity: 0; }
+.scroll-hint.is-hidden { opacity: 0; pointer-events: none; }
 
 .hint-text {
   font-size: 0.6rem;
@@ -353,15 +466,14 @@ onUnmounted(() => {
   font-weight: 600;
 }
 
-.scroll-hint svg {
-  animation: bounce 1.7s ease-in-out infinite;
-}
+.scroll-hint svg { animation: bounce 1.7s ease-in-out infinite; }
 
 @keyframes bounce {
   0%, 100% { transform: translateY(0); }
   50%       { transform: translateY(7px); }
 }
 
+/* Progress bar */
 .progress-track {
   position: absolute;
   bottom: 0;
