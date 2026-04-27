@@ -196,9 +196,13 @@ function playIntro() {
 }
 
 // ─── Zoom parallax ─────────────────────────────────────────────────────────────
-// El canvas-frame hace un zoom suave (1 → 1.06) a lo largo de todo el scroll
+// Solo en desktop: evita el desplazamiento lateral en tablet landscape.
+// Se aplica al CANVAS (no al frame) para que el transform-origin sea exactamente
+// el centro visual de la imagen, sin que el padding del contenedor lo desvie.
 function setupZoom() {
-  zoomST = gsap.to(frameRef.value, {
+  if (window.innerWidth < 1024) return  // no zoom en móvil/tablet
+
+  zoomST = gsap.to(canvasRef.value, {
     scale: 1.06,
     ease: 'none',
     scrollTrigger: {
@@ -206,7 +210,7 @@ function setupZoom() {
       trigger  : spacerRef.value,
       start    : 'top top',
       end      : 'bottom bottom',
-      scrub    : 3,           // más lento que los frames → efecto parallax
+      scrub    : 3,
     }
   })
 }
@@ -274,6 +278,14 @@ onMounted(async () => {
   if (sbWidth > 0) document.body.style.paddingRight = `${sbWidth}px`
 
   window.addEventListener('resize', resizeCanvas, { passive: true })
+  // Recalcular al girar el dispositivo (orientationchange no siempre dispara resize)
+  window.addEventListener('orientationchange', () => {
+    // Esperar a que el browser actualice las dimensiones tras el giro
+    setTimeout(() => {
+      resizeCanvas()
+      ScrollTrigger.refresh()
+    }, 300)
+  }, { passive: true })
 
   await preloadFrames()
   loaded = true
@@ -298,6 +310,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   window.removeEventListener('resize', resizeCanvas)
+  window.removeEventListener('orientationchange', resizeCanvas)
   gsap.ticker.remove(onTick)
   st?.kill()
   zoomST?.scrollTrigger?.kill()
@@ -388,28 +401,68 @@ onUnmounted(() => {
   pointer-events: none;
 }
 
-/* Labels */
+/* Labels — desktop: centrados • móvil/tablet portrait: arriba bajo el header */
 .service-labels {
   position: absolute;
   inset: 0;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
+  /* Móvil portrait: margen desde el header */
+  padding-top: 8rem;
   pointer-events: none;
   z-index: 10;
+}
+
+/* Tablet portrait (≥768px): misma distancia que móvil */
+@media (min-width: 768px) and (orientation: portrait) {
+  .service-labels {
+    padding-top: 8rem;
+  }
+}
+
+/* Tablet landscape (≥640px landscape): header visible es menor, reducir un poco */
+@media (min-width: 640px) and (orientation: landscape) and (max-width: 1023px) {
+  .service-labels {
+    padding-top: 5rem;
+  }
+}
+
+/* Desktop (≥1024px): centrado vertical */
+@media (min-width: 1024px) {
+  .service-labels {
+    align-items: center;
+    justify-content: center;
+    padding-top: 0;
+  }
 }
 
 .service-label {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.7rem;
-  padding: 1.5rem 3rem;
-  background: rgba(13, 13, 13, 0.55);
+  gap: 0.5rem;
+  /* Padding reducido en móvil para no ocupar mucho espacio vertical */
+  padding: 1rem 1.5rem;
+  background: rgba(13, 13, 13, 0.60);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(188, 149, 54, 0.30);
   text-align: center;
+}
+
+@media (min-width: 640px) {
+  .service-label {
+    padding: 1.2rem 2rem;
+    gap: 0.6rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .service-label {
+    padding: 1.5rem 3rem;
+    gap: 0.7rem;
+  }
 }
 
 .label-eyebrow {
