@@ -52,7 +52,7 @@ gsap.registerPlugin(ScrollTrigger)
 let _introShown = false
 
 const TOTAL_FRAMES = 21
-const BASE_PATH    = '/Canon_SL2_webP/'
+const BASE_PATH    = '/Canon_SL2-png/'
 
 const SEGMENTS = [
   { from: 4,  to: 8,  label: 'Retrato Corporativo'   },
