@@ -52,7 +52,7 @@ gsap.registerPlugin(ScrollTrigger)
 let _introShown = false
 
 const TOTAL_FRAMES = 21
-const BASE_PATH    = '/Canon_SL2-png/'
+const BASE_PATH    = '/Canon_SL2_png/'
 
 const SEGMENTS = [
   { from: 4,  to: 8,  label: 'Retrato Corporativo'   },
@@ -110,7 +110,7 @@ async function preloadFrames() {
     Array.from({ length: TOTAL_FRAMES }, (_, i) =>
       new Promise(resolve => {
         const img = new Image()
-        img.src = `${BASE_PATH}Frame${i + 1}.webp`
+        img.src = `${BASE_PATH}Frame${i + 1}.png`
         img.onload  = () => resolve(img)
         img.onerror = () => resolve(img)
       })
