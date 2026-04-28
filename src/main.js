@@ -2,6 +2,7 @@ import { createApp } from 'vue'
 import { createRouter, createWebHashHistory } from 'vue-router'
 import App from './App.vue'
 import './style.css'
+import VueMasonry from 'vue3-masonry-css'
 
 // Views (lazy-loaded)
 import HomeView from './views/HomeView.vue'
