@@ -304,7 +304,7 @@ onMounted(async () => {
 
     playIntro()
     setupScrollTrigger()
-    setupZoom()
+    //setupZoom()
   })
 })
 
@@ -313,7 +313,7 @@ onUnmounted(() => {
   window.removeEventListener('orientationchange', resizeCanvas)
   gsap.ticker.remove(onTick)
   st?.kill()
-  zoomST?.scrollTrigger?.kill()
+  //zoomST?.scrollTrigger?.kill()
   tween?.kill()
   document.body.style.overflow = ''
   document.body.style.paddingRight = ''
@@ -353,6 +353,7 @@ onUnmounted(() => {
   height: 100vh;
   width: 100%;
   overflow: hidden;
+  
 }
 
 /* Marco del canvas — sin padding porque el gradiente funde con el fondo */
@@ -363,7 +364,7 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   /* Padding mínimo solo para respetar el header */
-  padding: 3.5rem 0 0;
+  
   box-sizing: border-box;
   background: transparent;
   overflow: hidden;

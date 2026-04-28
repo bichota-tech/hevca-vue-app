@@ -1,13 +1,13 @@
 <template>
   <header
     class="fixed top-0 left-0 w-full z-50 transition-all duration-300"
-    :class="scrolled ? 'bg-[#0d0d0d]/95 backdrop-blur-md shadow-lg shadow-black/40' : 'bg-transparent'"
+    :class="scrolled ? 'bg-[#0d0d0d]/90 backdrop-blur-md shadow-lg shadow-black/40' : 'bg-transparent'"
   >
     <div class="page-container h-16 md:h-20 flex items-center justify-between gap-4">
 
       <!-- Logo -->
       <RouterLink to="/" class="shrink-0" aria-label="Inicio">
-        <img src="/multimedia/logo_hevca1.png" alt="HEVCA Photo & Art" class="h-9 md:h-12 w-auto object-contain" />
+        <img src="/multimedia/logo_hevca.png" alt="HEVCA Photo & Art" class="h-9 md:h-12 lg:h-18 w-auto object-contain" />
       </RouterLink>
 
       <!-- Desktop Nav -->
@@ -16,7 +16,7 @@
           v-for="link in navLinks"
           :key="link.to"
           :to="link.to"
-          class="text-[0.72rem] font-semibold tracking-widest uppercase text-[#f4f4f9]/75 hover:text-[#bc9536] transition-colors duration-200 relative group"
+          class="text-[1rem] font-semibold tracking-widest uppercase text-[#f4f4f9]/75 hover:text-[#bc9536] transition-colors duration-200 relative group"
           :class="{ 'text-[#bc9536]': isActive(link.to) }"
         >
           {{ link.label }}
