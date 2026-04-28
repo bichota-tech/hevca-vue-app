@@ -7,14 +7,19 @@
     <HeroCarousel />
 
     <!-- Intro Strip -->
-    <section class="section-wrap relative overflow-hidden bg-fixed" style="background: radial-gradient(ellipse at top, rgba(188,149,54,0.08) 0%, rgba(13,13,13,1) 80%);">
-      <div class="page-container relative z-10 text-center flex flex-col items-center justify-center">
+    <section class="section-wrap relative overflow-hidden bg-fixed pt-0! pb-0!" style="background: radial-gradient(ellipse at top, rgba(188,149,54,0.08) 0%, rgba(13,13,13,1) 80%);">
+      <div class="page-container pt-50! pb-40! relative z-10 
+                  bg-[url('/Canon_SL2_png/Frame1.png')] bg-cover bg-fixed
+                  bg-no-repeat bg-center bg-black/50 bg-blend-multiply
+                  text-center 
+                  flex flex-col 
+                  items-center justify-center">
         <span class="section-label">Bienvenida a HEVCA Photo & Art</span>
         <h2 class="section-title max-w-2xl mx-auto">
           Fotografía que captura<br><span>tu historia verdadera</span>
         </h2>
         <div class="gold-line"></div>
-        <p class="section-subtitle">
+        <p class="section-subtitle text-white!">
           En HEVCA Photo &amp; Art creamos imágenes que trascienden el tiempo. Desde retratos corporativos
           hasta sesiones artísticas íntimas, cada disparo refleja tu esencia con luz, emoción y detalle.
         </p>
@@ -85,9 +90,9 @@
     </section>
 
     <!-- Testimonios -->
-    <section class="section-wrap relative overflow-hidden bg-fixed bg-center bg-cover" style="background-image: url('/multimedia/comercial2.jpg');">
+    <section class="section-wrap relative overflow-hidden bg-fixed bg-center bg-cover" style="background-image: url('/multimedia/evento2.jpg');">
       <!-- Capa oscura superior para no perder legibilidad (Parallax overlay) -->
-      <div class="absolute inset-0 bg-black/85"></div>
+      <div class="absolute inset-0 bg-black/70"></div>
       
       <div class="page-container relative z-10">
         <span class="section-label">Clientes satisfechos</span>
