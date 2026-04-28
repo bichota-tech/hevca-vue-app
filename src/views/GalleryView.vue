@@ -35,23 +35,31 @@
       </div>
     </div>
 
-    <!-- Gallery Grid — con padding y margen inferior para separar del footer -->
+    <!-- Gallery Grid — Masonry layout estilo Pinterest -->
     <main class="page-container py-10 sm:py-12 pb-20">
-      <div v-if="displayImages.length" class="full-gallery grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
-        <div
+      <MasonryGrid
+        v-if="displayImages.length"
+        :columns="{ default: 4, 1024: 3, 768: 2, 640: 2 }"
+        :gutter="12"
+        class="full-gallery"
+      >
+        <MasonryGridItem
           v-for="(img, i) in displayImages"
           :key="img.jpg || i"
-          class="overflow-hidden cursor-pointer group aspect-square"
-          @click="openLb(i)"
         >
-          <img
-            :src="img.jpg || img.webp"
-            :alt="img.alt"
-            loading="lazy"
-            class="w-full h-full object-cover transition-all duration-500 group-hover:scale-110 group-hover:brightness-75"
-          />
-        </div>
-      </div>
+          <div
+            class="overflow-hidden cursor-pointer group mb-3"
+            @click="openLb(i)"
+          >
+            <img
+              :src="img.jpg || img.webp"
+              :alt="img.alt"
+              loading="lazy"
+              class="w-full h-auto block transition-all duration-500 group-hover:scale-110 group-hover:brightness-75"
+            />
+          </div>
+        </MasonryGridItem>
+      </MasonryGrid>
       <p v-else class="text-center text-[#9ca3af] py-24 text-sm">Cargando imágenes…</p>
     </main>
 
@@ -67,6 +75,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { MasonryGrid, MasonryGridItem } from 'vue3-masonry-css'
 
 const scrollY = ref(0)
 const handleScroll = () => { scrollY.value = window.scrollY }
@@ -110,5 +119,10 @@ onMounted(load)
 }
 .filter-btn:hover { border-color: #bc9536; color: #f4f4f9; }
 .filter-btn-active { border-color: #bc9536; color: #bc9536; background: rgba(188,149,54,0.08); }
-.full-gallery{padding-block:5rem;}
+
+/* Estilos de Masonry */
+.full-gallery {
+  padding-block: 2rem;
+  /* Eliminamos display:flex ya que esta librería usa CSS Columns nativos */
+}
 </style>
