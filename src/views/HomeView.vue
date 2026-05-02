@@ -91,7 +91,7 @@
     </section>
 
     <!-- Testimonios -->
-    <section class="section-wrap relative overflow-hidden bg-fixed bg-center bg-cover" style="background-image: url('/multimedia/evento2.jpg');">
+    <section class="section-wrap relative overflow-hidden bg-fixed bg-center bg-cover" style="background-image: url('/multimedia/evento.jpg');">
       <!-- Capa oscura superior para no perder legibilidad (Parallax overlay) -->
       <div class="absolute inset-0 bg-black/70"></div>
       

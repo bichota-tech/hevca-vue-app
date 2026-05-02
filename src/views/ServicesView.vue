@@ -50,7 +50,7 @@
     </section>
 
     <!-- Pricing -->
-    <section class="section-wrap relative overflow-hidden bg-fixed bg-center bg-cover" :style="{ backgroundImage: `url(${settings?.headerImages?.gallery || '/multimedia/artistico1.jpg'})` }">
+    <section class="section-wrap relative overflow-hidden bg-fixed bg-center bg-cover" :style="{ backgroundImage: `url(${settings?.headerImages?.gallery || '/multimedia/camera.jpg'})` }">
       <div class="absolute inset-0 bg-black/85"></div>
       <div class="page-container relative z-10">
         <span class="section-label">Inversión</span>
