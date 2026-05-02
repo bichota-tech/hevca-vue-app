@@ -23,10 +23,17 @@ const routes = [
 const router = createRouter({
   history: createWebHistory(),
   routes,
-  scrollBehavior(to, from, saved) {
-    if (to.hash) return { el: to.hash, behavior: 'smooth' }
-    return saved || { top: 0 }
+  scrollBehavior(to, from, savedPosition) {
+    if (to.hash) {
+      return {
+        el: to.hash,
+        behavior: 'smooth',
+      }
+    }
+    // Siempre volver arriba de todo instantáneamente al cambiar de ruta
+    return { top: 0 }
   }
+
 })
 
 
