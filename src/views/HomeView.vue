@@ -170,6 +170,8 @@ import HeroCarousel from '../components/HeroCarousel.vue'
 import LightboxModal from '../components/LightboxModal.vue'
 import ScrollFrameScene from '../components/ScrollFrameScene.vue'
 import { useGallery } from '../composables/useGallery.js'
+import { sanity } from '../lib/sanityClient'
+import { testimonialsQuery } from '../lib/queries/homeQueries'
 
 const { load, getFeatured } = useGallery()
 const featured = ref([])
@@ -185,15 +187,25 @@ const services = [
   { img: '/multimedia/familiar1.jpg',    title: 'Eventos & Especiales', desc: 'Bodas, XV años, baby showers, newborn… inmortalizamos los momentos más importantes de tu vida.' },
 ]
 
-const testimonials = [
+const testimonials = ref([
   { img: '/multimedia/cliente1.jpg', quote: 'Gracias a HEVCA logramos una imagen corporativa que refuerza nuestra marca al 100%.', name: 'Ana Gómez',    role: 'Directora de Marketing' },
   { img: '/multimedia/cliente2.jpg', quote: 'Profesionalismo y creatividad en cada toma. Las fotos de mis modelos son espectaculares.',  name: 'Jorge Torres', role: 'Coordinador de Agencia' },
   { img: '/multimedia/cliente3.jpg', quote: 'Las fotos de mi bebé son un tesoro. Grettel tiene un talento extraordinario.',              name: 'Marta Pérez',  role: 'Madre y Asesora Comercial' },
-]
+])
 
 onMounted(async () => {
   await load()
   featured.value = getFeatured(4)
+  
+  // Fetch testimonials
+  try {
+    const data = await sanity.fetch(testimonialsQuery)
+    if (data && data.length > 0) {
+      testimonials.value = data
+    }
+  } catch (err) {
+    console.error('Error fetching testimonials:', err)
+  }
 })
 </script>
 

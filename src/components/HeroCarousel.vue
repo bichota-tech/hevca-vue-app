@@ -65,22 +65,43 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
+import { sanity } from '../lib/sanityClient'
+import { heroSlidesQuery } from '../lib/queries/homeQueries'
 
-const slides = [
+const slides = ref([
   { img: '/multimedia/artistico1.jpg',  alt: 'Sesión Artística', title: 'Mirada Experta, Fotos con Alma.',           sub: 'Cada imagen cuenta una historia que permanece para siempre.' },
   { img: '/multimedia/comercial2.jpg',  alt: 'Sesión Comercial', title: 'Tu Marca, Nuestra Visión.',                 sub: 'La diferencia está en cómo inmortalizas tu momento.' },
   { img: '/multimedia/newborn2.jpg',    alt: 'Sesión Newborn',   title: 'De lo Cotidiano a lo Inolvidable.',         sub: 'A través del lente, capturamos lo que las palabras no pueden.' },
-]
+])
 
 const current = ref(0)
 let timer = null
 
-const next = () => { current.value = (current.value + 1) % slides.length }
-const prev = () => { current.value = (current.value - 1 + slides.length) % slides.length }
+const fetchSlides = async () => {
+  try {
+    const data = await sanity.fetch(heroSlidesQuery)
+    if (data && data.length > 0) {
+      slides.value = data.map(s => ({
+        img: s.img,
+        alt: s.title,
+        title: s.title,
+        sub: s.subtitle
+      }))
+    }
+  } catch (err) {
+    console.error('Error fetching hero slides:', err)
+  }
+}
+
+const next = () => { current.value = (current.value + 1) % slides.value.length }
+const prev = () => { current.value = (current.value - 1 + slides.value.length) % slides.value.length }
 const startTimer = () => { timer = setInterval(next, 4500) }
 const clearTimer = () => clearInterval(timer)
 
-onMounted(startTimer)
+onMounted(async () => {
+  await fetchSlides()
+  startTimer()
+})
 onUnmounted(clearTimer)
 </script>
 
