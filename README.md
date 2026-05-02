@@ -75,4 +75,4 @@ hevca-vue-app/
 ```
 
 ## 🤝 Créditos
-Desarrollado para HEVCA Photo & Art © 2025. Todos los derechos reservados.
+Desarrollado para HEVCA Photo & Art © 2026. Todos los derechos reservados.
