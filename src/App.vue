@@ -11,6 +11,30 @@
 </template>
 
 <script setup>
+import { onMounted } from 'vue'
 import AppHeader from './components/AppHeader.vue'
 import AppFooter from './components/AppFooter.vue'
+import { sanity } from './lib/sanityClient'
+import { siteSettingsQuery } from './lib/queries/homeQueries'
+
+onMounted(async () => {
+  try {
+    const settings = await sanity.fetch(siteSettingsQuery)
+    if (settings) {
+      if (settings.title) document.title = settings.title
+      if (settings.description) {
+        let meta = document.querySelector('meta[name="description"]')
+        if (!meta) {
+          meta = document.createElement('meta')
+          meta.name = 'description'
+          document.head.appendChild(meta)
+        }
+        meta.content = settings.description
+      }
+    }
+  } catch (err) {
+    console.error('Error fetching global settings:', err)
+  }
+})
 </script>
+

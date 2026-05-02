@@ -1,7 +1,7 @@
 <template>
   <div>
     <!-- Hero -->
-    <section class="relative overflow-hidden bg-fixed bg-center bg-cover" style="min-height: 500px; display:flex; align-items:flex-end; background-image: url('/multimedia/corporativo2.jpg');">
+    <section class="relative overflow-hidden bg-fixed bg-center bg-cover" :style="{ minHeight: '500px', display: 'flex', alignItems: 'flex-end', backgroundImage: `url(${settings?.headerImages?.about || '/multimedia/corporativo2.jpg'})` }">
       <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/55 to-black/30"></div>
       <div class="relative z-10 page-container pb-10 pt-24 text-left w-full">
         <span class="section-label" style="text-align:left;">La fotógrafa</span>
@@ -38,7 +38,7 @@
     <section class="section-wrap relative overflow-hidden pt-[220px] pb-16 lg:py-24">
       <div class="absolute inset-0">
         <img
-          src="/multimedia/corporativo1.jpg"
+          :src="settings?.aboutImage || '/multimedia/corporativo1.jpg'"
           alt="Grettel Hevia Cárdenas"
           class="w-full h-full object-cover object-top lg:object-cover lg:aspect-auto lg:object-left mask-image-bio"
         />
@@ -51,24 +51,14 @@
           <div class="w-full lg:max-w-[95%] lg:pl-4">
             <span class="text-[#bc9536] lg:text-white font-bold text-left w-full block mb-2 uppercase tracking-wide text-xs drop-shadow-md lg:drop-shadow-none">Detrás del lente</span>
             <h2 class="text-3xl sm:text-4xl font-black text-[#bc9536] lg:text-white mb-6 text-left drop-shadow-md lg:drop-shadow-none">Mi historia con la fotografía</h2>
-            <div class="textbio flex flex-col gap-4 text-black/90 font-medium leading-relaxed text-[0.95rem] text-left border-l-2 border-black/40 pl-4 py-1">
-              <p>
-                Todo comenzó con una cámara prestada y la certeza de que cada momento merece ser recordado con belleza.
-                Desde niña, Grettel tuvo una sensibilidad especial para capturar la luz y la emoción en las personas,
-                un don que perfeccionó durante años de estudio y práctica intensiva en fotografía artística y comercial.
-              </p>
-              <p>
-                Establecida en Ciudad de México, hoy dirige
-                <strong class="text-[#bc9536] lg:text-black font-black">HEVCA Photo &amp; Art</strong> con más de 8 años de experiencia
-                trabajando con empresas, marcas personales, parejas y familias. Su estilo combina una técnica
-                depurada con una mirada empática: el resultado son imágenes honestas, emotivas y visualmente impactantes.
-              </p>
-              <p>
-                Cree firmemente que una buena fotografía no es solo una imagen perfectamente expuesta;
-                es una conversación silenciosa entre la fotógrafa y quien la mira. Es ese instante de verdad
-                que perdura décadas después.
-              </p>
+            <div class="textbio flex flex-col gap-4 text-black/90 font-medium leading-relaxed text-[0.95rem] text-left border-l-2 border-black/40 pl-4 py-1" style="white-space: pre-wrap;">
+              {{ settings?.aboutText || `Todo comenzó con una cámara prestada y la certeza de que cada momento merece ser recordado con belleza. Desde niña, Grettel tuvo una sensibilidad especial para capturar la luz y la emoción en las personas, un don que perfeccionó durante años de estudio y práctica intensiva en fotografía artística y comercial.
+
+Establecida en Ciudad de México, hoy dirige HEVCA Photo & Art con más de 8 años de experiencia trabajando con empresas, marcas personales, parejas y familias. Su estilo combina una técnica depurada con una mirada empática: el resultado son imágenes honestas, emotivas y visualmente impactantes.
+
+Cree firmemente que una buena fotografía no es solo una imagen perfectamente expuesta; es una conversación silenciosa entre la fotógrafa y quien la mira. Es ese instante de verdad que perdura décadas después.` }}
             </div>
+
           </div>
 
             <!-- Values — 2x2 en mobile, 3 en desktop -->
@@ -128,6 +118,8 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 import { Target, Sparkles, Handshake } from 'lucide-vue-next'
+import { sanity } from '../lib/sanityClient'
+import { siteSettingsQuery } from '../lib/queries/homeQueries'
 
 const scrollY = ref(0)
 const handleScroll = () => { scrollY.value = window.scrollY }
@@ -137,6 +129,16 @@ onMounted(() => {
 })
 onUnmounted(() => window.removeEventListener('scroll', handleScroll))
 
+const settings = ref(null)
+
+onMounted(async () => {
+  try {
+    const res = await sanity.fetch(siteSettingsQuery)
+    if (res) settings.value = res
+  } catch (err) {
+    console.error('Error fetching settings:', err)
+  }
+})
 
 const stats = [
   { label: 'Años de experiencia', value: '8+'           },
@@ -171,6 +173,7 @@ const skills = [
   { name: 'Iluminación de Estudio',             level: 85 },
   { name: 'Fotografía Newborn & Familiar',      level: 89 },
 ]
+
 </script>
 
 <style scoped>

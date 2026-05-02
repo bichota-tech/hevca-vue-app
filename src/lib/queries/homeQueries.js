@@ -28,4 +28,21 @@ export const servicesQuery = `
   }
 `
 
+export const siteSettingsQuery = `
+  *[_type == "siteSettings"][0] {
+    title,
+    description,
+    "aboutImage": aboutImage.asset->url,
+    aboutText,
+    contactInfo,
+    "headerImages": {
+      "gallery": headers.gallery.asset->url,
+      "services": headers.services.asset->url,
+      "contact": headers.contact.asset->url,
+      "about": headers.about.asset->url
+    }
+  }
+`
+
+
 

@@ -1,7 +1,7 @@
 <template>
   <div>
     <!-- Hero Banner -->
-    <section class="relative overflow-hidden bg-fixed bg-center bg-cover" style="min-height: 500px; display:flex; align-items:flex-end; background-image: url('/multimedia/comercial2.jpg');">
+    <section class="relative overflow-hidden bg-fixed bg-center bg-cover" :style="{ minHeight: '500px', display: 'flex', alignItems: 'flex-end', backgroundImage: `url(${settings?.headerImages?.services || '/multimedia/comercial2.jpg'})` }">
       <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-black/50 to-black/30"></div>
       <div class="relative z-10 page-container pb-10 pt-24 text-left">
         <span class="section-label" style="text-align:left;">Lo que ofrezco</span>
@@ -50,7 +50,7 @@
     </section>
 
     <!-- Pricing -->
-    <section class="section-wrap relative overflow-hidden bg-fixed bg-center bg-cover" style="background-image: url('/multimedia/artistico1.jpg');">
+    <section class="section-wrap relative overflow-hidden bg-fixed bg-center bg-cover" :style="{ backgroundImage: `url(${settings?.headerImages?.gallery || '/multimedia/artistico1.jpg'})` }">
       <div class="absolute inset-0 bg-black/85"></div>
       <div class="page-container relative z-10">
         <span class="section-label">Inversión</span>
@@ -132,7 +132,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 import { sanity } from '../lib/sanityClient'
-import { servicesQuery } from '../lib/queries/homeQueries'
+import { servicesQuery, siteSettingsQuery } from '../lib/queries/homeQueries'
 
 const scrollY = ref(0)
 const handleScroll = () => { scrollY.value = window.scrollY }
@@ -140,6 +140,7 @@ const handleScroll = () => { scrollY.value = window.scrollY }
 onMounted(() => window.addEventListener('scroll', handleScroll, { passive: true }))
 onUnmounted(() => window.removeEventListener('scroll', handleScroll))
 
+const settings = ref(null)
 const services = ref([
   {
     tag: 'Para empresas y profesionales',
@@ -196,6 +197,15 @@ const services = ref([
 ])
 
 onMounted(async () => {
+  // Fetch settings
+  try {
+    const sSet = await sanity.fetch(siteSettingsQuery)
+    if (sSet) settings.value = sSet
+  } catch (err) {
+    console.error('Error fetching settings:', err)
+  }
+
+  // Fetch services
   try {
     const data = await sanity.fetch(servicesQuery)
     if (data && data.length > 0) {
@@ -205,6 +215,7 @@ onMounted(async () => {
     console.error('Error fetching services:', err)
   }
 })
+
 
 
 const packages = [

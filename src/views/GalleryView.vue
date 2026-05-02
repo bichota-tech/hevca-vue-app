@@ -1,7 +1,8 @@
 <template>
   <div class="min-h-screen pt-2">
     <!-- Page Header (Hero style) -->
-    <section class="relative overflow-hidden bg-fixed bg-center bg-cover" style="min-height: 500px; display:flex; align-items:flex-end; background-image: url('/multimedia/artistico1.jpg');">
+    <section class="relative overflow-hidden bg-fixed bg-center bg-cover" :style="{ minHeight: '500px', display: 'flex', alignItems: 'flex-end', backgroundImage: `url(${settings?.headerImages?.gallery || '/multimedia/artistico1.jpg'})` }">
+
       <div class="absolute inset-0 bg-gradient-to-t from-[#0d0d0d]/95 via-[#0d0d0d]/60 to-black/30"></div>
       <div class="relative z-10 page-container pb-10 pt-24 text-left w-full">
         <span class="section-label" style="text-align:left;">Portafolio profesional</span>
@@ -76,6 +77,10 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { MasonryGrid, MasonryGridItem } from 'vue3-masonry-css'
+import LightboxModal from '../components/LightboxModal.vue'
+import { useGallery } from '../composables/useGallery.js'
+import { sanity } from '../lib/sanityClient'
+import { siteSettingsQuery } from '../lib/queries/homeQueries'
 
 const scrollY = ref(0)
 const handleScroll = () => { scrollY.value = window.scrollY }
@@ -85,13 +90,11 @@ onMounted(() => {
 })
 onUnmounted(() => window.removeEventListener('scroll', handleScroll))
 
-import LightboxModal from '../components/LightboxModal.vue'
-import { useGallery } from '../composables/useGallery.js'
-
 const { load, getAll, getCategory, categories } = useGallery()
 const activeCat = ref(null)
 const lbOpen  = ref(false)
 const lbIndex = ref(0)
+const settings = ref(null)
 
 const displayImages = computed(() =>
   activeCat.value ? getCategory(activeCat.value) : getAll()
@@ -100,7 +103,16 @@ const displayImages = computed(() =>
 const selectCat = (key) => { activeCat.value = key }
 const openLb = (i) => { lbIndex.value = i; lbOpen.value = true }
 
-onMounted(load)
+onMounted(async () => {
+  await load()
+  try {
+    const res = await sanity.fetch(siteSettingsQuery)
+    if (res) settings.value = res
+  } catch (err) {
+    console.error('Error fetching settings:', err)
+  }
+})
+
 </script>
 
 <style scoped>

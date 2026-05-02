@@ -123,7 +123,7 @@
     <!-- About Mini -->
     <section class="relative overflow-hidden pt-[220px] pb-16 md:py-24 flex items-center min-h-[500px]">
       <div class="absolute inset-0">
-        <img src="/multimedia/corporativo1.jpg" alt="Grettel Hevia Cárdenas" class="w-full h-full object-cover md:object-[30%_center]" />
+        <img :src="settings?.aboutImage || '/multimedia/corporativo1.jpg'" alt="Grettel Hevia Cárdenas" class="w-full h-full object-cover md:object-[30%_center]" />
         <!-- Mobile: oscuro abajo, transparente arriba. Desktop: oscuro a la derecha, transparente a la izquierda -->
         <div class="absolute inset-0 bg-gradient-to-t from-[#0d0d0d] via-[#0d0d0d]/90 to-black/20 md:bg-gradient-to-l md:from-[#0d0d0d] md:via-[#0d0d0d]/90 md:to-transparent"></div>
       </div>
@@ -133,14 +133,13 @@
           <span class="text-[#bc9536] font-bold text-center md:text-left w-full">Detrás del lente</span>
           <h2 class="text-2xl sm:text-3xl font-bold text-white">Grettel Hevia Cárdenas</h2>
           <p class="text-[#9ca3af] leading-relaxed text-sm">
-            Fotógrafa profesional establecida en Ciudad de México con más de 8 años de experiencia capturando
-            momentos que perduran. Su trabajo combina técnica depurada con una sensibilidad artística única,
-            creando imágenes que conectan emocionalmente con cada cliente.
+            {{ settings?.aboutText || 'Fotógrafa profesional establecida en Ciudad de México con más de 8 años de experiencia capturando momentos que perduran. Su trabajo combina técnica depurada con una sensibilidad artística única, creando imágenes que conectan emocionalmente con cada cliente.' }}
           </p>
           <RouterLink to="/sobre-mi" class="btn-outline-gold mt-2">CONOCE MI HISTORIA</RouterLink>
         </div>
       </div>
     </section>
+
 
     <!-- CTA Final — centrado -->
     <section class="section-wrap relative overflow-hidden border-y border-[#bc9536]/20 bg-fixed" style="background: radial-gradient(circle at center, rgba(188,149,54,0.12) 0%, rgba(13,13,13,1) 100%);">
@@ -171,12 +170,13 @@ import LightboxModal from '../components/LightboxModal.vue'
 import ScrollFrameScene from '../components/ScrollFrameScene.vue'
 import { useGallery } from '../composables/useGallery.js'
 import { sanity } from '../lib/sanityClient'
-import { testimonialsQuery, servicesQuery } from '../lib/queries/homeQueries'
+import { testimonialsQuery, servicesQuery, siteSettingsQuery } from '../lib/queries/homeQueries'
 
 const { load, getFeatured } = useGallery()
 const featured = ref([])
 const lbOpen  = ref(false)
 const lbIndex = ref(0)
+const settings = ref(null)
 
 const openLb = (i) => { lbIndex.value = i; lbOpen.value = true }
 
@@ -197,6 +197,14 @@ onMounted(async () => {
   await load()
   featured.value = getFeatured(4)
   
+  // Fetch settings
+  try {
+    const setRes = await sanity.fetch(siteSettingsQuery)
+    if (setRes) settings.value = setRes
+  } catch (err) {
+    console.error('Error fetching settings:', err)
+  }
+
   // Fetch services
   try {
     const sData = await sanity.fetch(servicesQuery)
@@ -217,6 +225,7 @@ onMounted(async () => {
     console.error('Error fetching testimonials:', err)
   }
 })
+
 
 </script>
 
