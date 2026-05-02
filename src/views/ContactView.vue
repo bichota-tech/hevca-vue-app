@@ -93,7 +93,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import ContactForm from '../components/ContactForm.vue'
 import { MapPin, Clock } from 'lucide-vue-next'
 import { sanity } from '../lib/sanityClient'
