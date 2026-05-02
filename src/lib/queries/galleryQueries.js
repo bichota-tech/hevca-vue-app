@@ -1,5 +1,5 @@
 export const galleryImagesQuery = `
-  *[_type == "gallery"][0].sections[] {
+  *[_type == "gallery"] {
     "items": images[] {
       "category": ^.category,
       "url": asset->url,
