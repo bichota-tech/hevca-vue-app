@@ -44,7 +44,7 @@ export function useGallery() {
   const getFeatured = (n = 4) => shuffle(getAll()).slice(0, n)
 
   const categories = [
-    { key: 'corporativa-comercial', label: 'Corporativa & Comercial' },
+    { key: 'corporativo-comercial', label: 'Corporativa & Comercial' },
     { key: 'artistico-boudoir', label: 'Artístico & Boudoir' },
     { key: 'eventos', label: 'Eventos' },
     { key: 'newborn-familiar', label: 'Newborn & Familiar' },
