@@ -49,7 +49,13 @@
       ></textarea>
     </div>
 
+    <!-- Honeypot (Anti-spam) -->
+    <div class="hidden" aria-hidden="true">
+      <input v-model="form.botcheck" type="checkbox" name="botcheck" tabindex="-1" autocomplete="off" />
+    </div>
+
     <!-- Submit -->
+
     <button
       type="submit"
       :disabled="sending"
@@ -74,7 +80,7 @@
 <script setup>
 import { reactive, ref } from 'vue'
 
-const form = reactive({ name: '', email: '', service: '', message: '' })
+const form = reactive({ name: '', email: '', service: '', message: '', botcheck: false })
 const errors = reactive({})
 const sending = ref(false)
 const success = ref(false)
@@ -99,7 +105,9 @@ const validate = () => {
 }
 
 const handleSubmit = async () => {
+  if (form.botcheck) return // Es un bot
   if (!validate()) return
+
   sending.value = true
   success.value = false
   serverError.value = false
