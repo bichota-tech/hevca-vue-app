@@ -9,8 +9,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@sanity/client": "^7.22.0",
+    "@sanity/image-url": "^2.1.1",
     "gsap": "^3.15.0",
     "lucide-vue-next": "^1.0.0",
+    "tslib": "^2.8.1",
     "vue": "^3.5.0",
     "vue-router": "^4.3.0",
     "vue3-masonry-css": "^1.0.8"
