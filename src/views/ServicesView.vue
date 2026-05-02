@@ -131,6 +131,8 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
+import { sanity } from '../lib/sanityClient'
+import { servicesQuery } from '../lib/queries/homeQueries'
 
 const scrollY = ref(0)
 const handleScroll = () => { scrollY.value = window.scrollY }
@@ -138,7 +140,7 @@ const handleScroll = () => { scrollY.value = window.scrollY }
 onMounted(() => window.addEventListener('scroll', handleScroll, { passive: true }))
 onUnmounted(() => window.removeEventListener('scroll', handleScroll))
 
-const services = [
+const services = ref([
   {
     tag: 'Para empresas y profesionales',
     title: 'Retrato Corporativo',
@@ -191,7 +193,19 @@ const services = [
       'Álbum físico premium (paquetes premium)',
     ],
   },
-]
+])
+
+onMounted(async () => {
+  try {
+    const data = await sanity.fetch(servicesQuery)
+    if (data && data.length > 0) {
+      services.value = data
+    }
+  } catch (err) {
+    console.error('Error fetching services:', err)
+  }
+})
+
 
 const packages = [
   {

@@ -171,7 +171,7 @@ import LightboxModal from '../components/LightboxModal.vue'
 import ScrollFrameScene from '../components/ScrollFrameScene.vue'
 import { useGallery } from '../composables/useGallery.js'
 import { sanity } from '../lib/sanityClient'
-import { testimonialsQuery } from '../lib/queries/homeQueries'
+import { testimonialsQuery, servicesQuery } from '../lib/queries/homeQueries'
 
 const { load, getFeatured } = useGallery()
 const featured = ref([])
@@ -180,12 +180,12 @@ const lbIndex = ref(0)
 
 const openLb = (i) => { lbIndex.value = i; lbOpen.value = true }
 
-const services = [
+const services = ref([
   { img: '/multimedia/corporativo1.jpg', title: 'Retrato Corporativo',  desc: 'Proyecta una imagen auténtica y profesional en redes sociales y sitios web. Ideal para empresas, emprendedores y directivos.' },
   { img: '/multimedia/comercial1.jpg',   title: 'Fotografía Comercial', desc: 'Imágenes atractivas que impulsan ventas y destacan tus productos en e-commerce y campañas de marketing.' },
   { img: '/multimedia/artistico1.jpg',   title: 'Boudoir & Artístico',  desc: 'Celebra tu belleza y confianza a través del arte y la elegancia. Un regalo único para ti o para quien más amas.' },
   { img: '/multimedia/familiar1.jpg',    title: 'Eventos & Especiales', desc: 'Bodas, XV años, baby showers, newborn… inmortalizamos los momentos más importantes de tu vida.' },
-]
+])
 
 const testimonials = ref([
   { img: '/multimedia/cliente1.jpg', quote: 'Gracias a HEVCA logramos una imagen corporativa que refuerza nuestra marca al 100%.', name: 'Ana Gómez',    role: 'Directora de Marketing' },
@@ -197,16 +197,27 @@ onMounted(async () => {
   await load()
   featured.value = getFeatured(4)
   
+  // Fetch services
+  try {
+    const sData = await sanity.fetch(servicesQuery)
+    if (sData && sData.length > 0) {
+      services.value = sData
+    }
+  } catch (err) {
+    console.error('Error fetching services:', err)
+  }
+
   // Fetch testimonials
   try {
-    const data = await sanity.fetch(testimonialsQuery)
-    if (data && data.length > 0) {
-      testimonials.value = data
+    const tData = await sanity.fetch(testimonialsQuery)
+    if (tData && tData.length > 0) {
+      testimonials.value = tData
     }
   } catch (err) {
     console.error('Error fetching testimonials:', err)
   }
 })
+
 </script>
 
 <style scoped>

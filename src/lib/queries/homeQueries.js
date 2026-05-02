@@ -16,3 +16,16 @@ export const testimonialsQuery = `
     "img": image.asset->url
   }
 `
+
+export const servicesQuery = `
+  *[_type == "service"] | order(order asc) {
+    _id,
+    title,
+    tag,
+    "desc": description,
+    "img": image.asset->url,
+    includes
+  }
+`
+
+
