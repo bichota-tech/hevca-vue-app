@@ -1,5 +1,5 @@
 import { createApp } from 'vue'
-import { createRouter, createWebHashHistory } from 'vue-router'
+import { createRouter, createWebHistory } from 'vue-router'
 import App from './App.vue'
 import './style.css'
 import VueMasonry from 'vue3-masonry-css'
@@ -12,7 +12,8 @@ const AboutView    = () => import('./views/AboutView.vue')
 const ContactView  = () => import('./views/ContactView.vue')
 
 const routes = [
-  { path: '/',          component: HomeView,     name: 'home' },
+  { path: '/',          redirect: '/inicio' },
+  { path: '/inicio',    component: HomeView,     name: 'home' },
   { path: '/galeria',   component: GalleryView,  name: 'galeria' },
   { path: '/servicios', component: ServicesView, name: 'servicios' },
   { path: '/sobre-mi',  component: AboutView,    name: 'sobre-mi' },
@@ -20,12 +21,13 @@ const routes = [
 ]
 
 const router = createRouter({
-  history: createWebHashHistory(),
+  history: createWebHistory(),
   routes,
   scrollBehavior(to, from, saved) {
     if (to.hash) return { el: to.hash, behavior: 'smooth' }
     return saved || { top: 0 }
   }
 })
+
 
 createApp(App).use(router).use(VueMasonry).mount('#app')
