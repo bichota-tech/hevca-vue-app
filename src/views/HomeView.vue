@@ -34,7 +34,8 @@
         <p class="section-subtitle">Adaptados a empresas, profesionales y proyectos personales en México</p>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 lg:gap-6">
-          <div v-for="svc in services" :key="svc.title" class="service-card group gap-2">
+          <div v-for="svc in services.slice(0, 4)" :key="svc.title" class="service-card group gap-2">
+
             <div class="overflow-hidden h-52 w-full">
               <img
                 :src="svc.img"
