@@ -1,7 +1,7 @@
 <template>
   <div>
     <!-- Hero Banner -->
-    <section class="relative overflow-hidden bg-fixed bg-center bg-cover" :style="{ minHeight: '500px', display: 'flex', alignItems: 'flex-end', backgroundImage: `url(${settings?.headerImages?.contact || '/multimedia/corporativo1.jpg'})` }">
+    <section class="relative overflow-hidden bg-fixed bg-center bg-cover" :style="{ minHeight: '500px', display: 'flex', alignItems: 'flex-end', backgroundImage: `url(${settings?.headerImages?.contact || '/multimedia/estudio.jpg'})` }">
 
       <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-black/50 to-black/30"></div>
       <div class="relative z-10 page-container pb-10 pt-24 text-left w-full">

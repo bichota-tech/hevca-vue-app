@@ -1,7 +1,7 @@
 <template>
   <div>
     <!-- Hero -->
-    <section class="relative overflow-hidden bg-fixed bg-center bg-cover" :style="{ minHeight: '500px', display: 'flex', alignItems: 'flex-end', backgroundImage: `url(${settings?.headerImages?.about || '/multimedia/corporativo2.jpg'})` }">
+    <section class="relative overflow-hidden bg-fixed bg-center bg-cover" :style="{ minHeight: '500px', display: 'flex', alignItems: 'flex-end', backgroundImage: `url(${settings?.headerImages?.about || '/multimedia/estudio.jpg'})` }">
       <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/55 to-black/30"></div>
       <div class="relative z-10 page-container pb-10 pt-24 text-left w-full">
         <span class="section-label" style="text-align:left;">La fotógrafa</span>
@@ -38,7 +38,7 @@
     <section class="section-wrap relative overflow-hidden pt-[220px] pb-16 lg:py-24">
       <div class="absolute inset-0">
         <img
-          :src="settings?.aboutImage || '/multimedia/corporativo1.jpg'"
+          :src="settings?.aboutImage || '/multimedia/estudio.jpg'"
           alt="Grettel Hevia Cárdenas"
           class="w-full h-full object-cover object-top lg:object-cover lg:aspect-auto lg:object-left mask-image-bio"
         />
@@ -78,7 +78,7 @@ Cree firmemente que una buena fotografía no es solo una imagen perfectamente ex
     </section>
 
     <!-- Skills — centradas -->
-    <section class="section-wrap relative overflow-hidden bg-fixed bg-center bg-cover" style="background-image: url('/multimedia/corporativo2.jpg');">
+    <section class="section-wrap relative overflow-hidden bg-fixed bg-center bg-cover" style="background-image: url('/multimedia/camara.jpg');">
       <div class="absolute inset-0 bg-black/85"></div>
       <div class="page-container relative z-10 flex flex-col items-center">
         <span class="section-label">Mi expertise</span>

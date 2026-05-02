@@ -1,7 +1,7 @@
 <template>
   <div class="min-h-screen pt-2">
     <!-- Page Header (Hero style) -->
-    <section class="relative overflow-hidden bg-fixed bg-center bg-cover" :style="{ minHeight: '500px', display: 'flex', alignItems: 'flex-end', backgroundImage: `url(${settings?.headerImages?.gallery || '/multimedia/artistico1.jpg'})` }">
+    <section class="relative overflow-hidden bg-fixed bg-center bg-cover" :style="{ minHeight: '500px', display: 'flex', alignItems: 'flex-end', backgroundImage: `url(${settings?.headerImages?.gallery || '/multimedia/boidoir.jpg'})` }">
 
       <div class="absolute inset-0 bg-gradient-to-t from-[#0d0d0d]/95 via-[#0d0d0d]/60 to-black/30"></div>
       <div class="relative z-10 page-container pb-10 pt-24 text-left w-full">

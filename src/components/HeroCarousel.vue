@@ -69,9 +69,9 @@ import { sanity } from '../lib/sanityClient'
 import { heroSlidesQuery } from '../lib/queries/homeQueries'
 
 const slides = ref([
-  { img: '/multimedia/artistico1.jpg',  alt: 'Sesión Artística', title: 'Mirada Experta, Fotos con Alma.',           sub: 'Cada imagen cuenta una historia que permanece para siempre.' },
-  { img: '/multimedia/comercial2.jpg',  alt: 'Sesión Comercial', title: 'Tu Marca, Nuestra Visión.',                 sub: 'La diferencia está en cómo inmortalizas tu momento.' },
-  { img: '/multimedia/newborn2.jpg',    alt: 'Sesión Newborn',   title: 'De lo Cotidiano a lo Inolvidable.',         sub: 'A través del lente, capturamos lo que las palabras no pueden.' },
+  { img: '/multimedia/boidoir.jpg',  alt: 'Sesión Artística', title: 'Mirada Experta, Fotos con Alma.',           sub: 'Cada imagen cuenta una historia que permanece para siempre.' },
+  { img: '/multimedia/camara.jpg',  alt: 'Sesión Comercial', title: 'Tu Marca, Nuestra Visión.',                 sub: 'La diferencia está en cómo inmortalizas tu momento.' },
+  { img: '/multimedia/newborn.jpg',    alt: 'Sesión Newborn',   title: 'De lo Cotidiano a lo Inolvidable.',         sub: 'A través del lente, capturamos lo que las palabras no pueden.' },
 ])
 
 const current = ref(0)

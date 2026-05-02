@@ -124,7 +124,7 @@
     <!-- About Mini -->
     <section class="relative overflow-hidden pt-[220px] pb-16 md:py-24 flex items-center min-h-[500px]">
       <div class="absolute inset-0">
-        <img :src="settings?.aboutImage || '/multimedia/corporativo1.jpg'" alt="Grettel Hevia Cárdenas" class="w-full h-full object-cover md:object-[30%_center]" />
+        <img :src="settings?.aboutImage || '/multimedia/estudio.jpg'" alt="Grettel Hevia Cárdenas" class="w-full h-full object-cover md:object-[30%_center]" />
         <!-- Mobile: oscuro abajo, transparente arriba. Desktop: oscuro a la derecha, transparente a la izquierda -->
         <div class="absolute inset-0 bg-gradient-to-t from-[#0d0d0d] via-[#0d0d0d]/90 to-black/20 md:bg-gradient-to-l md:from-[#0d0d0d] md:via-[#0d0d0d]/90 md:to-transparent"></div>
       </div>
@@ -182,16 +182,16 @@ const settings = ref(null)
 const openLb = (i) => { lbIndex.value = i; lbOpen.value = true }
 
 const services = ref([
-  { img: '/multimedia/corporativo1.jpg', title: 'Retrato Corporativo',  desc: 'Proyecta una imagen auténtica y profesional en redes sociales y sitios web. Ideal para empresas, emprendedores y directivos.' },
-  { img: '/multimedia/comercial1.jpg',   title: 'Fotografía Comercial', desc: 'Imágenes atractivas que impulsan ventas y destacan tus productos en e-commerce y campañas de marketing.' },
-  { img: '/multimedia/artistico1.jpg',   title: 'Boudoir & Artístico',  desc: 'Celebra tu belleza y confianza a través del arte y la elegancia. Un regalo único para ti o para quien más amas.' },
-  { img: '/multimedia/familiar1.jpg',    title: 'Eventos & Especiales', desc: 'Bodas, XV años, baby showers, newborn… inmortalizamos los momentos más importantes de tu vida.' },
+  { img: '/multimedia/estudio.jpg', title: 'Retrato Corporativo',  desc: 'Proyecta una imagen auténtica y profesional en redes sociales y sitios web. Ideal para empresas, emprendedores y directivos.' },
+  { img: '/multimedia/camara.jpg',   title: 'Fotografía Comercial', desc: 'Imágenes atractivas que impulsan ventas y destacan tus productos en e-commerce y campañas de marketing.' },
+  { img: '/multimedia/boidoir.jpg',   title: 'Boudoir & Artístico',  desc: 'Celebra tu belleza y confianza a través del arte y la elegancia. Un regalo único para ti o para quien más amas.' },
+  { img: '/multimedia/newborn.jpg',    title: 'Eventos & Especiales', desc: 'Bodas, XV años, baby showers, newborn… inmortalizamos los momentos más importantes de tu vida.' },
 ])
 
 const testimonials = ref([
-  { img: '/multimedia/cliente1.jpg', quote: 'Gracias a HEVCA logramos una imagen corporativa que refuerza nuestra marca al 100%.', name: 'Ana Gómez',    role: 'Directora de Marketing' },
-  { img: '/multimedia/cliente2.jpg', quote: 'Profesionalismo y creatividad en cada toma. Las fotos de mis modelos son espectaculares.',  name: 'Jorge Torres', role: 'Coordinador de Agencia' },
-  { img: '/multimedia/cliente3.jpg', quote: 'Las fotos de mi bebé son un tesoro. Grettel tiene un talento extraordinario.',              name: 'Marta Pérez',  role: 'Madre y Asesora Comercial' },
+  { img: '/multimedia/estudio.jpg', quote: 'Gracias a HEVCA logramos una imagen corporativa que refuerza nuestra marca al 100%.', name: 'Ana Gómez',    role: 'Directora de Marketing' },
+  { img: '/multimedia/camara.jpg', quote: 'Profesionalismo y creatividad en cada toma. Las fotos de mis modelos son espectaculares.',  name: 'Jorge Torres', role: 'Coordinador de Agencia' },
+  { img: '/multimedia/estudio.jpg', quote: 'Las fotos de mi bebé son un tesoro. Grettel tiene un talento extraordinario.',              name: 'Marta Pérez',  role: 'Madre y Asesora Comercial' },
 ])
 
 onMounted(async () => {

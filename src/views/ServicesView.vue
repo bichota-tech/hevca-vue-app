@@ -1,7 +1,7 @@
 <template>
   <div>
     <!-- Hero Banner -->
-    <section class="relative overflow-hidden bg-fixed bg-center bg-cover" :style="{ minHeight: '500px', display: 'flex', alignItems: 'flex-end', backgroundImage: `url(${settings?.headerImages?.services || '/multimedia/comercial2.jpg'})` }">
+    <section class="relative overflow-hidden bg-fixed bg-center bg-cover" :style="{ minHeight: '500px', display: 'flex', alignItems: 'flex-end', backgroundImage: `url(${settings?.headerImages?.services || '/multimedia/estudio.jpg'})` }">
       <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-black/50 to-black/30"></div>
       <div class="relative z-10 page-container pb-10 pt-24 text-left">
         <span class="section-label" style="text-align:left;">Lo que ofrezco</span>
@@ -50,7 +50,7 @@
     </section>
 
     <!-- Pricing -->
-    <section class="section-wrap relative overflow-hidden bg-fixed bg-center bg-cover" :style="{ backgroundImage: `url(${settings?.headerImages?.gallery || '/multimedia/camera.jpg'})` }">
+    <section class="section-wrap relative overflow-hidden bg-fixed bg-center bg-cover" :style="{ backgroundImage: `url(${settings?.headerImages?.gallery || '/multimedia/camara.jpg'})` }">
       <div class="absolute inset-0 bg-black/85"></div>
       <div class="page-container relative z-10">
         <span class="section-label">Inversión</span>
@@ -145,7 +145,8 @@ const services = ref([
   {
     tag: 'Para empresas y profesionales',
     title: 'Retrato Corporativo',
-    img: '/multimedia/corporativo1.jpg',
+    img: '/multimedia/estudio.jpg',
+
     desc: 'Tu imagen profesional es tu carta de presentación. Sesiones diseñadas para directivos, emprendedores y equipos de trabajo que quieren proyectar confianza, liderazgo y autenticidad en LinkedIn, sitios web y materiales de marca.',
     includes: [
       'Asesoría previa sobre vestuario y locación',
@@ -158,7 +159,8 @@ const services = ref([
   {
     tag: 'Para marcas y e-commerce',
     title: 'Fotografía Comercial',
-    img: '/multimedia/comercial1.jpg',
+    img: '/multimedia/camara.jpg',
+
     desc: 'Imágenes que venden. Fotografía de producto, lifestyle y marca pensada para tiendas en línea, catálogos digitales y campañas publicitarias. Convierte visitantes en clientes con imágenes que enamoran.',
     includes: [
       'Shooting completo de producto o servicio',
@@ -171,7 +173,8 @@ const services = ref([
   {
     tag: 'Arte íntimo y personal',
     title: 'Boudoir & Artístico',
-    img: '/multimedia/artistico1.jpg',
+    img: '/multimedia/boidoir.jpg',
+
     desc: 'Celebra tu cuerpo, tu historia y tu poder. Las sesiones boudoir y artísticas son un espacio seguro para explorar tu feminidad con elegancia. Un regalo poderoso para ti misma o para quien más amas.',
     includes: [
       'Consulta privada previa sin compromiso',
@@ -184,7 +187,8 @@ const services = ref([
   {
     tag: 'Momentos que perduran',
     title: 'Eventos & Sesiones Especiales',
-    img: '/multimedia/familiar1.jpg',
+    img: '/multimedia/newborn.jpg',
+
     desc: 'Bodas, XV años, baby showers, newborn, sesiones familiares e infantiles. Capturamos la emoción de cada instante con una mirada artística que trasciende el tiempo. Cada foto es un recuerdo para siempre.',
     includes: [
       'Cobertura completa del evento o sesión',
