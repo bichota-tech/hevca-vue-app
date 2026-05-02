@@ -71,7 +71,7 @@
             @click="openLb(i)"
           >
             <img
-              :src="img.jpg || img.webp"
+              :src="img.url || img.jpg || img.webp"
               :alt="img.alt"
               class="w-full h-full object-cover transition-all duration-500 group-hover:scale-105 group-hover:brightness-75"
               loading="lazy"

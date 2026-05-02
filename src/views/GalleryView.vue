@@ -45,14 +45,14 @@
       >
         <MasonryGridItem
           v-for="(img, i) in displayImages"
-          :key="img.jpg || i"
+          :key="img._id || i"
         >
           <div
             class="overflow-hidden cursor-pointer group mb-3"
             @click="openLb(i)"
           >
             <img
-              :src="img.jpg || img.webp"
+              :src="img.url || img.jpg || img.webp"
               :alt="img.alt"
               loading="lazy"
               class="w-full h-auto block transition-all duration-500 group-hover:scale-110 group-hover:brightness-75"

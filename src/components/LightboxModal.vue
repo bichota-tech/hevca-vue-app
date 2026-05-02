@@ -25,9 +25,9 @@
           <Transition name="img-fade" mode="out-in">
             <img
               v-if="image"
-              :key="image.jpg || image.webp"
-              :src="image.jpg || image.webp || image.avif"
-              :alt="image.alt || ''"
+              :key="image._id || image.jpg || image.webp"
+              :src="image.url || image.jpg || image.webp || image.avif"
+              :alt="image.title || image.alt || ''"
               class="max-h-[85vh] max-w-[90vw] object-contain rounded"
               loading="lazy"
             />

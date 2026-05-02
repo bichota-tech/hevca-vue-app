@@ -1,19 +1,37 @@
 import { ref, readonly } from 'vue'
+import { sanity } from '../lib/sanityClient'
+import { galleryImagesQuery } from '../lib/queries/galleryQueries'
 
 const images = ref({})
 const loaded = ref(false)
-const error  = ref(null)
+const error = ref(null)
+const loading = ref(false)
 
 export function useGallery() {
   const load = async () => {
     if (loaded.value) return
+
+    loading.value = true
+
     try {
-      const res = await fetch('/imagenes.json')
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      images.value = await res.json()
+      const data = await sanity.fetch(galleryImagesQuery)
+
+      const grouped = data.reduce((acc, item) => {
+        if (!item.category) return acc
+
+        if (!acc[item.category]) acc[item.category] = []
+
+        acc[item.category].push(item)
+        return acc
+      }, {})
+
+      images.value = grouped
       loaded.value = true
+
     } catch (e) {
       error.value = e.message
+    } finally {
+      loading.value = false
     }
   }
 
@@ -26,14 +44,23 @@ export function useGallery() {
   const getFeatured = (n = 4) => shuffle(getAll()).slice(0, n)
 
   const categories = [
-    { key: 'corporativo',  label: 'Sesión Corporativa' },
-    { key: 'comercial',    label: 'Sesión Comercial' },
-    { key: 'boudoirArt',   label: 'Boudoir & Artístico' },
-    { key: 'evento',       label: 'Sesión de Eventos' },
-    { key: 'familiar',     label: 'Sesión Familiar' },
-    { key: 'infantil',     label: 'Sesión Infantil' },
-    { key: 'newborn',      label: 'Sesión Newborn' },
+    { key: 'corporativo', label: 'Sesión Corporativa' },
+    { key: 'comercial', label: 'Sesión Comercial' },
+    { key: 'boudoirArt', label: 'Boudoir & Artístico' },
+    { key: 'evento', label: 'Sesión de Eventos' },
+    { key: 'familiar', label: 'Sesión Familiar' },
+    { key: 'infantil', label: 'Sesión Infantil' },
+    { key: 'newborn', label: 'Sesión Newborn' },
   ]
 
-  return { load, getAll, getCategory, getFeatured, categories, images: readonly(images), error: readonly(error) }
+  return {
+    load,
+    getAll,
+    getCategory,
+    getFeatured,
+    categories,
+    images: readonly(images),
+    error: readonly(error),
+    loading: readonly(loading),
+  }
 }
