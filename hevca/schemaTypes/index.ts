@@ -1,11 +1,11 @@
-import galleryImage from './galleryImage'
+import gallery from './gallery'
 import heroSlide from './heroSlide'
 import testimonial from './testimonial'
 import service from './service'
 import siteSettings from './siteSettings'
 
 export const schemaTypes = [
-    galleryImage,
+    gallery,
     heroSlide,
     testimonial,
     service,
