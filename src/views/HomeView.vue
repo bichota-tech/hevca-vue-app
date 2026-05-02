@@ -7,7 +7,7 @@
     <HeroCarousel />
 
     <!-- Intro Strip -->
-    <section class="section-wrap relative overflow-hidden bg-fixed pt-0! pb-0!" style="background: radial-gradient(ellipse at top, rgba(188,149,54,0.08) 0%, rgba(13,13,13,1) 80%);">
+    <section class="section-wrap relative overflow-hidden pt-0! pb-0!" style="background: radial-gradient(ellipse at top, rgba(188,149,54,0.08) 0%, rgba(13,13,13,1) 80%); background-attachment: fixed;">
       <div class="page-container pt-50! pb-40! relative z-10 
                   bg-[url('/Canon_SL2_png/Frame1.png')] bg-cover bg-fixed
                   bg-no-repeat bg-center bg-black/50 bg-blend-multiply
