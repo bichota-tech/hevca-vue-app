@@ -44,13 +44,12 @@ export function useGallery() {
   const getFeatured = (n = 4) => shuffle(getAll()).slice(0, n)
 
   const categories = [
-    { key: 'corporativo', label: 'Sesión Corporativa' },
-    { key: 'comercial', label: 'Sesión Comercial' },
-    { key: 'boudoirArt', label: 'Boudoir & Artístico' },
-    { key: 'evento', label: 'Sesión de Eventos' },
-    { key: 'familiar', label: 'Sesión Familiar' },
-    { key: 'infantil', label: 'Sesión Infantil' },
-    { key: 'newborn', label: 'Sesión Newborn' },
+    { key: 'corporativa-comercial', label: 'Corporativa & Comercial' },
+    { key: 'artistico-boudoir', label: 'Artístico & Boudoir' },
+    { key: 'eventos', label: 'Eventos' },
+    { key: 'newborn-familiar', label: 'Newborn & Familiar' },
+    { key: 'edicion-retoque', label: 'Edición & Retoque' },
+    { key: 'marca-personal', label: 'Marca Personal' },
   ]
 
   return {
