@@ -60,7 +60,7 @@
           </div>
         </MasonryGridItem>
       </MasonryGrid>
-      <p v-else class="text-center text-[#9ca3af] py-24 text-sm">Cargando imágenes…</p>
+      <p v-else class="text-center text-[#9ca3af] py-24 text-sm">Estamos editando para esta categoría, ¡pronto estará lista!</p>
     </main>
 
     <!-- Lightbox -->
