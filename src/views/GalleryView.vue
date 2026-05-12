@@ -79,22 +79,29 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { MasonryGrid, MasonryGridItem } from 'vue3-masonry-css'
 import LightboxModal from '../components/LightboxModal.vue'
 import { useGallery } from '../composables/useGallery.js'
-import { sanity } from '../lib/sanityClient'
-import { siteSettingsQuery } from '../lib/queries/homeQueries'
+import { useSiteSettings } from '../composables/useSiteSettings.js'
 
 const scrollY = ref(0)
-const handleScroll = () => { scrollY.value = window.scrollY }
+let rafId = null
+const handleScroll = () => {
+  if (rafId) return
+  rafId = requestAnimationFrame(() => {
+    scrollY.value = window.scrollY
+    rafId = null
+  })
+}
 
-onMounted(() => {
-  window.addEventListener('scroll', handleScroll, { passive: true })
+onMounted(() => window.addEventListener('scroll', handleScroll, { passive: true }))
+onUnmounted(() => {
+  window.removeEventListener('scroll', handleScroll)
+  if (rafId) cancelAnimationFrame(rafId)
 })
-onUnmounted(() => window.removeEventListener('scroll', handleScroll))
 
 const { load, getAll, getCategory, categories } = useGallery()
+const { settings, load: loadSettings } = useSiteSettings()
 const activeCat = ref(null)
 const lbOpen  = ref(false)
 const lbIndex = ref(0)
-const settings = ref(null)
 
 const displayImages = computed(() =>
   activeCat.value ? getCategory(activeCat.value) : getAll()
@@ -104,13 +111,7 @@ const selectCat = (key) => { activeCat.value = key }
 const openLb = (i) => { lbIndex.value = i; lbOpen.value = true }
 
 onMounted(async () => {
-  await load()
-  try {
-    const res = await sanity.fetch(siteSettingsQuery)
-    if (res) settings.value = res
-  } catch (err) {
-    console.error('Error fetching settings:', err)
-  }
+  await Promise.all([load(), loadSettings()])
 })
 
 </script>

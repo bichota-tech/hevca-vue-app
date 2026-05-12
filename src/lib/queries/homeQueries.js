@@ -3,7 +3,7 @@ export const heroSlidesQuery = `
     _id,
     title,
     subtitle,
-    "img": image.asset->url
+    "img": image.asset->url + "?w=1920&auto=format&q=80"
   }
 `
 
@@ -13,7 +13,7 @@ export const testimonialsQuery = `
     name,
     role,
     quote,
-    "img": image.asset->url
+    "img": image.asset->url + "?w=200&auto=format&q=80"
   }
 `
 
@@ -23,7 +23,7 @@ export const servicesQuery = `
     title,
     tag,
     "desc": description,
-    "img": image.asset->url,
+    "img": image.asset->url + "?w=800&auto=format&q=82",
     includes
   }
 `
@@ -32,17 +32,15 @@ export const siteSettingsQuery = `
   *[_type == "siteSettings"][0] {
     title,
     description,
-    "aboutImage": aboutImage.asset->url,
+    "aboutImage": aboutImage.asset->url + "?w=1200&auto=format&q=82",
     aboutText,
     contactInfo,
     "headerImages": {
-      "gallery": headers.gallery.asset->url,
-      "services": headers.services.asset->url,
-      "contact": headers.contact.asset->url,
-      "about": headers.about.asset->url
+      "gallery":  headers.gallery.asset->url  + "?w=1920&auto=format&q=78",
+      "services": headers.services.asset->url + "?w=1920&auto=format&q=78",
+      "contact":  headers.contact.asset->url  + "?w=1920&auto=format&q=78",
+      "about":    headers.about.asset->url    + "?w=1920&auto=format&q=78"
     }
   }
 `
-
-
 

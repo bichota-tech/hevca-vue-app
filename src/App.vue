@@ -14,12 +14,13 @@
 import { onMounted } from 'vue'
 import AppHeader from './components/AppHeader.vue'
 import AppFooter from './components/AppFooter.vue'
-import { sanity } from './lib/sanityClient'
-import { siteSettingsQuery } from './lib/queries/homeQueries'
+import { useSiteSettings } from './composables/useSiteSettings.js'
+
+const { load: loadSettings } = useSiteSettings()
 
 onMounted(async () => {
   try {
-    const settings = await sanity.fetch(siteSettingsQuery)
+    const settings = await loadSettings()
     if (settings) {
       if (settings.title) document.title = settings.title
       if (settings.description) {
@@ -33,7 +34,7 @@ onMounted(async () => {
       }
     }
   } catch (err) {
-    console.error('Error fetching global settings:', err)
+    console.error('Error applying global settings:', err)
   }
 })
 </script>

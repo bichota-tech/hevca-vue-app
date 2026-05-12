@@ -72,6 +72,7 @@ let ctx          = null
 let loaded       = false
 let leaving      = false
 let logW = 0, logH = 0
+let cachedGrad   = null   // Gradiente radial cacheado: se recalcula solo en resize
 
 // Frame suavizado: target viene del ScrollTrigger, current se lerp via ticker
 let frameTarget  = 0
@@ -94,20 +95,12 @@ function drawFrame(index) {
   const img = frames[index]
   if (!img?.naturalWidth) return
 
-  // Degradado radial: #bc9536 en el centro → #0d0d0d en los bordes
-  // Se crea en cada frame porque las dimensiones pueden cambiar tras un resize
-  const cx = logW / 2
-  const cy = logH / 2
-  // Radio hasta la esquina más lejana para cubrir toda el área
-  const r  = Math.sqrt(cx * cx + cy * cy)
-
-  const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, r)
-  grad.addColorStop(0,    '#c9a23e')   // oro cálido en el centro (ligeramente más claro)
-  grad.addColorStop(0.35, '#7a5e22')   // transición dorada media
-  grad.addColorStop(0.65, '#2e2008')   // marrón oscuro
-  grad.addColorStop(1,    '#0d0d0d')   // funde con el fondo de la página
-
-  ctx.fillStyle = grad
+  // Usar gradiente cacheado (se crea una vez en resizeCanvas/createGradient)
+  if (cachedGrad) {
+    ctx.fillStyle = cachedGrad
+  } else {
+    ctx.fillStyle = '#0d0d0d'
+  }
   ctx.fillRect(0, 0, logW, logH)
 
   const scale = Math.min(logW / img.naturalWidth, logH / img.naturalHeight)
@@ -130,21 +123,57 @@ function onTick() {
   }
 }
 
-// ─── Precarga ─────────────────────────────────────────────────────────────────
-async function preloadFrames() {
-  frames = await Promise.all(
-    Array.from({ length: TOTAL_FRAMES }, (_, i) =>
-      new Promise(resolve => {
-        const img = new Image()
-        img.src = frameName(i)
-        img.onload  = () => resolve(img)
-        img.onerror = () => { console.warn(`No se cargó: ${img.src}`); resolve(img) }
-      })
-    )
-  )
+// ─── Precarga progresiva ───────────────────────────────────────────────────────
+// Fase 1: carga los 5 primeros frames (críticos) → activa la animación
+// Fase 2: carga el resto en segundo plano sin bloquear la UI
+function loadFrame(i) {
+  return new Promise(resolve => {
+    const img = new Image()
+    img.src = frameName(i)
+    img.onload  = () => resolve(img)
+    img.onerror = () => { console.warn(`Frame no cargado: ${img.src}`); resolve(img) }
+  })
 }
 
-// ─── Resize canvas ────────────────────────────────────────────────────────────
+async function preloadFrames() {
+  const CRITICAL = 5  // Frames visibles al inicio del scroll
+
+  // Fase 1: frames críticos — bloquea hasta tener lo mínimo para mostrar
+  const criticalFrames = await Promise.all(
+    Array.from({ length: CRITICAL }, (_, i) => loadFrame(i))
+  )
+  frames = criticalFrames
+  loaded = true
+
+  // Mostrar el primer frame tan pronto como esté disponible
+  requestAnimationFrame(() => {
+    resizeCanvas()
+    drawFrame(0)
+    lastDrawnIdx = 0
+  })
+
+  // Fase 2: resto de frames en background — no bloquea la UI
+  Promise.all(
+    Array.from({ length: TOTAL_FRAMES - CRITICAL }, (_, i) => loadFrame(i + CRITICAL))
+  ).then(restFrames => {
+    frames = [...criticalFrames, ...restFrames]
+  })
+}
+
+// ─── Resize canvas + crear gradiente cacheado ─────────────────────────────────
+function createGradient() {
+  if (!ctx || !logW || !logH) return
+  const cx = logW / 2
+  const cy = logH / 2
+  const r  = Math.sqrt(cx * cx + cy * cy)
+  const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, r)
+  grad.addColorStop(0,    '#c9a23e')
+  grad.addColorStop(0.35, '#7a5e22')
+  grad.addColorStop(0.65, '#2e2008')
+  grad.addColorStop(1,    '#0d0d0d')
+  cachedGrad = grad
+}
+
 function resizeCanvas() {
   if (!canvasRef.value || !frameRef.value) return
   const cs = window.getComputedStyle(frameRef.value)
@@ -164,6 +193,9 @@ function resizeCanvas() {
   canvasRef.value.height = Math.round(h * dpr)
   ctx = canvasRef.value.getContext('2d', { alpha: false })
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+
+  // Recalcular gradiente cacheado con las nuevas dimensiones
+  createGradient()
 
   if (loaded && !leaving) drawFrame(Math.max(0, lastDrawnIdx))
 }
@@ -270,6 +302,8 @@ function exitScene() {
 }
 
 // ─── Lifecycle ────────────────────────────────────────────────────────────────
+let orientationHandler = null
+
 onMounted(async () => {
   if (_introShown) return
 
@@ -278,43 +312,41 @@ onMounted(async () => {
   if (sbWidth > 0) document.body.style.paddingRight = `${sbWidth}px`
 
   window.addEventListener('resize', resizeCanvas, { passive: true })
-  // Recalcular al girar el dispositivo (orientationchange no siempre dispara resize)
-  window.addEventListener('orientationchange', () => {
-    // Esperar a que el browser actualice las dimensiones tras el giro
+
+  // Recalcular al girar el dispositivo
+  orientationHandler = () => {
     setTimeout(() => {
       resizeCanvas()
       ScrollTrigger.refresh()
     }, 300)
-  }, { passive: true })
+  }
+  window.addEventListener('orientationchange', orientationHandler, { passive: true })
 
+  // Carga progresiva: los primeros 5 frames desbloquean la UI rápidamente
   await preloadFrames()
-  loaded = true
 
   requestAnimationFrame(() => {
     if (overlayRef.value) overlayRef.value.scrollTop = 0
 
-    resizeCanvas()
-    drawFrame(0)
-    lastDrawnIdx = 0
+    // resizeCanvas ya fue llamado dentro de preloadFrames (fase 1)
+    // Solo garantizamos que el ticker y los triggers están activos
     frameCurrent = 0
     frameTarget  = 0
 
-    // Activar ticker GSAP para interpolación suave de frames
     gsap.ticker.add(onTick)
 
     playIntro()
     setupScrollTrigger()
-    //setupZoom()
   })
 })
 
 onUnmounted(() => {
   window.removeEventListener('resize', resizeCanvas)
-  window.removeEventListener('orientationchange', resizeCanvas)
+  if (orientationHandler) window.removeEventListener('orientationchange', orientationHandler)
   gsap.ticker.remove(onTick)
   st?.kill()
-  //zoomST?.scrollTrigger?.kill()
   tween?.kill()
+  cachedGrad = null
   document.body.style.overflow = ''
   document.body.style.paddingRight = ''
 })

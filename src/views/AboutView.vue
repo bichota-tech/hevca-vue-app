@@ -118,26 +118,28 @@ Cree firmemente que una buena fotografía no es solo una imagen perfectamente ex
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 import { Target, Sparkles, Handshake } from 'lucide-vue-next'
-import { sanity } from '../lib/sanityClient'
-import { siteSettingsQuery } from '../lib/queries/homeQueries'
+import { useSiteSettings } from '../composables/useSiteSettings.js'
 
 const scrollY = ref(0)
-const handleScroll = () => { scrollY.value = window.scrollY }
+let rafId = null
+const handleScroll = () => {
+  if (rafId) return
+  rafId = requestAnimationFrame(() => {
+    scrollY.value = window.scrollY
+    rafId = null
+  })
+}
 
-onMounted(() => {
-  window.addEventListener('scroll', handleScroll, { passive: true })
+onMounted(() => window.addEventListener('scroll', handleScroll, { passive: true }))
+onUnmounted(() => {
+  window.removeEventListener('scroll', handleScroll)
+  if (rafId) cancelAnimationFrame(rafId)
 })
-onUnmounted(() => window.removeEventListener('scroll', handleScroll))
 
-const settings = ref(null)
+const { settings, load: loadSettings } = useSiteSettings()
 
 onMounted(async () => {
-  try {
-    const res = await sanity.fetch(siteSettingsQuery)
-    if (res) settings.value = res
-  } catch (err) {
-    console.error('Error fetching settings:', err)
-  }
+  await loadSettings()
 })
 
 const stats = [

@@ -4,8 +4,8 @@ import App from './App.vue'
 import './style.css'
 import VueMasonry from 'vue3-masonry-css'
 
-// Views (lazy-loaded)
-import HomeView from './views/HomeView.vue'
+// Views (all lazy-loaded for optimal bundle splitting)
+const HomeView     = () => import('./views/HomeView.vue')
 const GalleryView  = () => import('./views/GalleryView.vue')
 const ServicesView = () => import('./views/ServicesView.vue')
 const AboutView    = () => import('./views/AboutView.vue')

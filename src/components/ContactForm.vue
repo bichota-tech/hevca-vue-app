@@ -117,7 +117,7 @@ const handleSubmit = async () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
       body: JSON.stringify({
-        access_key: '5122eb3b-775c-42ca-8e24-fd0bfc57ec5a',
+        access_key: import.meta.env.VITE_WEB3FORMS_KEY,
         'Nombre cliente': form.name,
         'Email': form.email,
         'Servicio': form.service,

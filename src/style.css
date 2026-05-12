@@ -168,3 +168,16 @@ body {
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: var(--color-dark); }
 ::-webkit-scrollbar-thumb { background: var(--color-gold); border-radius: 3px; }
+
+/* ─── bg-fixed fix (móvil/tablet) ───────────────────────── */
+/*
+  background-attachment: fixed no funciona en iOS Safari y provoca
+  repaints constantes (jank) en Android en cada frame de scroll.
+  En dispositivos < 1024px se desactiva para usar scroll normal.
+  En desktop (≥ 1024px) se mantiene el efecto parallax.
+*/
+@media (max-width: 1023px) {
+  .bg-fixed {
+    background-attachment: scroll !important;
+  }
+}

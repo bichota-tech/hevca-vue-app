@@ -113,7 +113,7 @@ const handleScroll = () => {
 }
 
 onMounted(() => {
-  window.addEventListener('scroll', handleScroll)
+  window.addEventListener('scroll', handleScroll, { passive: true })
   handleScroll()
 })
 onUnmounted(() => window.removeEventListener('scroll', handleScroll))

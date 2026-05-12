@@ -170,14 +170,15 @@ import HeroCarousel from '../components/HeroCarousel.vue'
 import LightboxModal from '../components/LightboxModal.vue'
 import ScrollFrameScene from '../components/ScrollFrameScene.vue'
 import { useGallery } from '../composables/useGallery.js'
+import { useSiteSettings } from '../composables/useSiteSettings.js'
 import { sanity } from '../lib/sanityClient'
-import { testimonialsQuery, servicesQuery, siteSettingsQuery } from '../lib/queries/homeQueries'
+import { testimonialsQuery, servicesQuery } from '../lib/queries/homeQueries'
 
 const { load, getFeatured } = useGallery()
+const { settings, load: loadSettings } = useSiteSettings()
 const featured = ref([])
 const lbOpen  = ref(false)
 const lbIndex = ref(0)
-const settings = ref(null)
 
 const openLb = (i) => { lbIndex.value = i; lbOpen.value = true }
 
@@ -195,36 +196,19 @@ const testimonials = ref([
 ])
 
 onMounted(async () => {
-  await load()
+  // Lanzar todas las peticiones en paralelo para máximo rendimiento
+  await Promise.all([
+    load(),
+    loadSettings(),
+    sanity.fetch(servicesQuery).then(data => {
+      if (data?.length) services.value = data
+    }).catch(err => console.error('Error fetching services:', err)),
+    sanity.fetch(testimonialsQuery).then(data => {
+      if (data?.length) testimonials.value = data
+    }).catch(err => console.error('Error fetching testimonials:', err)),
+  ])
+
   featured.value = getFeatured(4)
-  
-  // Fetch settings
-  try {
-    const setRes = await sanity.fetch(siteSettingsQuery)
-    if (setRes) settings.value = setRes
-  } catch (err) {
-    console.error('Error fetching settings:', err)
-  }
-
-  // Fetch services
-  try {
-    const sData = await sanity.fetch(servicesQuery)
-    if (sData && sData.length > 0) {
-      services.value = sData
-    }
-  } catch (err) {
-    console.error('Error fetching services:', err)
-  }
-
-  // Fetch testimonials
-  try {
-    const tData = await sanity.fetch(testimonialsQuery)
-    if (tData && tData.length > 0) {
-      testimonials.value = tData
-    }
-  } catch (err) {
-    console.error('Error fetching testimonials:', err)
-  }
 })
 
 
