@@ -47,12 +47,15 @@ gsap.registerPlugin(ScrollTrigger)
 
 let _introShown = false
 
-const TOTAL_FRAMES = 50
+const TOTAL_FRAMES = 51
 const BASE_PATH    = '/Canon_SL2_webp/'
-function frameName(i) { return `${BASE_PATH}Frame${i + 1}.webp` }
+function frameName(i) { 
+  const paddedIndex = i.toString().padStart(3, '0')
+  return `${BASE_PATH}Frames_${paddedIndex}.webp` 
+}
 
 const SEGMENTS = [
-  { from: 3,  to: 8,  label: 'Retrato Corporativo'  },
+  { from: 1,  to: 8,  label: 'Retrato Corporativo'  }, // Cambiado a 1
   { from: 10, to: 15, label: 'Fotografía Comercial' },
   { from: 17, to: 22, label: 'Boudoir & Artístico'  },
   { from: 24, to: 29, label: 'Eventos & Especiales' },
@@ -329,8 +332,18 @@ onUnmounted(() => {
   position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
   box-sizing: border-box; background: transparent; overflow: hidden; transform-origin: center center;
 }
-.frame-canvas { display: block; background: transparent; transform-origin: center center; will-change: transform, opacity; }
 
+.frame-canvas { 
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100% !important; 
+  height: 100% !important; 
+  display: block; 
+  background: transparent; 
+  transform-origin: center center; 
+  will-change: transform, opacity; 
+}
 .canvas-vignette {
   position: absolute; inset: 0; pointer-events: none;
   background:

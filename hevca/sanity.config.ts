@@ -7,8 +7,8 @@ export default defineConfig({
   name: 'default',
   title: 'HEVCA',
 
-  projectId: 'illa07bq',
-  dataset: 'production',
+  projectId: import.meta.env.VITE_SANITY_PROJECT_ID,
+  dataset: import.meta.env.VITE_SANITY_DATASET,
 
   plugins: [structureTool(), visionTool()],
 
