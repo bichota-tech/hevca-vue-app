@@ -13,7 +13,7 @@
         </div>
 
         <div class="service-labels">
-          <Transition name="label-fade" mode="out-in">
+          <Transition name="label-fade">
             <div v-if="activeLabel" :key="activeLabel" class="service-label">
               <span class="label-eyebrow">Servicios</span>
               <h2 class="label-title font-['Montserrat']">{{ activeLabel }}</h2>

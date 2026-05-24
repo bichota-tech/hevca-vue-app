@@ -24,7 +24,18 @@ const router = createRouter({
   history: createWebHistory(),
   routes,
   scrollBehavior(to, from, savedPosition) {
+    if (savedPosition) {
+      return savedPosition
+    }
+    
+    // Si la ruta destino tiene un hash
     if (to.hash) {
+      // Bloqueamos los hashes problemáticos para que no lancen el warning CSS
+      if (to.hash === '#' || to.hash === '#/') {
+        return { top: 0 } 
+      }
+      
+      // Para anchors reales (ej: #contacto), hacemos scroll suave
       return {
         el: to.hash,
         behavior: 'smooth',
@@ -36,5 +47,5 @@ const router = createRouter({
 
 })
 
-
+export default router
 createApp(App).use(router).use(VueMasonry).mount('#app')
