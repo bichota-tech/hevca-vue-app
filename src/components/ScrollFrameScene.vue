@@ -16,7 +16,7 @@
           <Transition name="label-fade" mode="out-in">
             <div v-if="activeLabel" :key="activeLabel" class="service-label">
               <span class="label-eyebrow">Servicios</span>
-              <h2 class="label-title">{{ activeLabel }}</h2>
+              <h2 class="label-title font-['Montserrat']">{{ activeLabel }}</h2>
               <div class="label-line" />
             </div>
           </Transition>
@@ -47,15 +47,15 @@ gsap.registerPlugin(ScrollTrigger)
 
 let _introShown = false
 
-const TOTAL_FRAMES = 21
-const BASE_PATH    = '/Canon_SL2_png/'
-function frameName(i) { return `${BASE_PATH}Frame${i + 1}.png` }
+const TOTAL_FRAMES = 50
+const BASE_PATH    = '/Canon_SL2_webp/'
+function frameName(i) { return `${BASE_PATH}Frame${i + 1}.webp` }
 
 const SEGMENTS = [
-  { from: 4,  to: 8,  label: 'Retrato Corporativo'  },
-  { from: 8,  to: 12, label: 'Fotografía Comercial' },
-  { from: 12, to: 16, label: 'Boudoir & Artístico'  },
-  { from: 16, to: 21, label: 'Eventos & Especiales' },
+  { from: 3,  to: 8,  label: 'Retrato Corporativo'  },
+  { from: 10, to: 15, label: 'Fotografía Comercial' },
+  { from: 17, to: 22, label: 'Boudoir & Artístico'  },
+  { from: 24, to: 29, label: 'Eventos & Especiales' },
 ]
 
 const visible    = ref(!_introShown)
@@ -72,9 +72,8 @@ let ctx          = null
 let loaded       = false
 let leaving      = false
 let logW = 0, logH = 0
-let cachedGrad   = null   // Gradiente radial cacheado: se recalcula solo en resize
 
-// Frame suavizado: target viene del ScrollTrigger, current se lerp via ticker
+// Variables planas para evitar el overhead reactivo de Vue
 let frameTarget  = 0
 let frameCurrent = 0
 let lastDrawnIdx = -1
@@ -89,43 +88,39 @@ const activeLabel = computed(() => {
   return null
 })
 
-// ─── Dibujar frame ────────────────────────────────────────────────────────────
+// ─── 1. Dibujar frame (Optimizado sin Background Fill) ──────────────
 function drawFrame(index) {
   if (!ctx || !logW || !logH) return
   const img = frames[index]
   if (!img?.naturalWidth) return
 
-  // Usar gradiente cacheado (se crea una vez en resizeCanvas/createGradient)
-  if (cachedGrad) {
-    ctx.fillStyle = cachedGrad
-  } else {
-    ctx.fillStyle = '#0d0d0d'
-  }
-  ctx.fillRect(0, 0, logW, logH)
-
-  const scale = Math.min(logW / img.naturalWidth, logH / img.naturalHeight)
+  // Usamos Math.max para emular 'object-fit: cover' y rellenar todo el lienzo
+  const scale = Math.max(logW / img.naturalWidth, logH / img.naturalHeight)
   const sw = img.naturalWidth  * scale
   const sh = img.naturalHeight * scale
   const sx = (logW - sw) / 2
   const sy = (logH - sh) / 2
+  
+  // Limpiamos opcionalmente (muy rápido) y dibujamos la imagen plana
+  ctx.clearRect(0, 0, logW, logH)
   ctx.drawImage(img, 0, 0, img.naturalWidth, img.naturalHeight, sx, sy, sw, sh)
 }
 
-// ─── GSAP Ticker: interpola frameCurrent → frameTarget ───────────────────────
-// Esto suaviza los saltos entre los 21 frames discretos
+// ─── 2. GSAP Ticker (Lerp ajustado) ──────────────────────────────────
 function onTick() {
   if (!loaded || leaving) return
-  frameCurrent += (frameTarget - frameCurrent) * 0.18
+  // GSAP ya suaviza el 'frameTarget' mediante su 'scrub: 1.5'. 
+  // Mantenemos tu lerp pero con un factor ágil (0.3) para evitar doble latencia
+  frameCurrent += (frameTarget - frameCurrent) * 0.3
   const idx = Math.min(TOTAL_FRAMES - 1, Math.max(0, Math.round(frameCurrent)))
+  
   if (idx !== lastDrawnIdx) {
     drawFrame(idx)
     lastDrawnIdx = idx
   }
 }
 
-// ─── Precarga progresiva ───────────────────────────────────────────────────────
-// Fase 1: carga los 5 primeros frames (críticos) → activa la animación
-// Fase 2: carga el resto en segundo plano sin bloquear la UI
+// ─── Precarga progresiva ──────────────────────────────────────────────
 function loadFrame(i) {
   return new Promise(resolve => {
     const img = new Image()
@@ -136,23 +131,20 @@ function loadFrame(i) {
 }
 
 async function preloadFrames() {
-  const CRITICAL = 5  // Frames visibles al inicio del scroll
+  const CRITICAL = 5
 
-  // Fase 1: frames críticos — bloquea hasta tener lo mínimo para mostrar
   const criticalFrames = await Promise.all(
     Array.from({ length: CRITICAL }, (_, i) => loadFrame(i))
   )
   frames = criticalFrames
   loaded = true
 
-  // Mostrar el primer frame tan pronto como esté disponible
   requestAnimationFrame(() => {
     resizeCanvas()
     drawFrame(0)
     lastDrawnIdx = 0
   })
 
-  // Fase 2: resto de frames en background — no bloquea la UI
   Promise.all(
     Array.from({ length: TOTAL_FRAMES - CRITICAL }, (_, i) => loadFrame(i + CRITICAL))
   ).then(restFrames => {
@@ -160,29 +152,13 @@ async function preloadFrames() {
   })
 }
 
-// ─── Resize canvas + crear gradiente cacheado ─────────────────────────────────
-function createGradient() {
-  if (!ctx || !logW || !logH) return
-  const cx = logW / 2
-  const cy = logH / 2
-  const r  = Math.sqrt(cx * cx + cy * cy)
-  const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, r)
-  grad.addColorStop(0,    '#c9a23e')
-  grad.addColorStop(0.35, '#7a5e22')
-  grad.addColorStop(0.65, '#2e2008')
-  grad.addColorStop(1,    '#0d0d0d')
-  cachedGrad = grad
-}
-
+// ─── 3. Resize canvas (Limpio) ────────────────────────────────────────
 function resizeCanvas() {
   if (!canvasRef.value || !frameRef.value) return
   const cs = window.getComputedStyle(frameRef.value)
-  const pL = parseFloat(cs.paddingLeft)   || 0
-  const pR = parseFloat(cs.paddingRight)  || 0
-  const pT = parseFloat(cs.paddingTop)    || 0
-  const pB = parseFloat(cs.paddingBottom) || 0
-  const w = frameRef.value.clientWidth  - pL - pR
-  const h = frameRef.value.clientHeight - pT - pB
+  const w = frameRef.value.clientWidth  - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0)
+  const h = frameRef.value.clientHeight - (parseFloat(cs.paddingTop) || 0) - (parseFloat(cs.paddingBottom) || 0)
+  
   if (!w || !h) return
 
   logW = w; logH = h
@@ -191,11 +167,9 @@ function resizeCanvas() {
   canvasRef.value.style.height = `${h}px`
   canvasRef.value.width  = Math.round(w * dpr)
   canvasRef.value.height = Math.round(h * dpr)
+  
   ctx = canvasRef.value.getContext('2d', { alpha: false })
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-
-  // Recalcular gradiente cacheado con las nuevas dimensiones
-  createGradient()
 
   if (loaded && !leaving) drawFrame(Math.max(0, lastDrawnIdx))
 }
@@ -206,19 +180,16 @@ function onSceneHidden() {
   document.body.style.paddingRight = ''
 }
 
-// ─── Animación de entrada ─────────────────────────────────────────────────────
+// ─── Animación de entrada y ScrollTriggers (Sin Cambios) ──────────────
 function playIntro() {
-  // Canvas: aparece con fade + ligero scale up
   gsap.fromTo(canvasRef.value,
     { opacity: 0, scale: 0.94 },
     { opacity: 1, scale: 1, duration: 1.4, ease: 'power3.out', delay: 0.1 }
   )
-  // Viñeta: se intensifica al entrar
   gsap.fromTo(vignetteRef.value,
     { opacity: 0 },
     { opacity: 1, duration: 1.8, ease: 'power2.out' }
   )
-  // Hint: entra después
   if (hintRef.value) {
     gsap.fromTo(hintRef.value,
       { opacity: 0, y: 12 },
@@ -227,12 +198,8 @@ function playIntro() {
   }
 }
 
-// ─── Zoom parallax ─────────────────────────────────────────────────────────────
-// Solo en desktop: evita el desplazamiento lateral en tablet landscape.
-// Se aplica al CANVAS (no al frame) para que el transform-origin sea exactamente
-// el centro visual de la imagen, sin que el padding del contenedor lo desvie.
 function setupZoom() {
-  if (window.innerWidth < 1024) return  // no zoom en móvil/tablet
+  if (window.innerWidth < 1024) return
 
   zoomST = gsap.to(canvasRef.value, {
     scale: 1.06,
@@ -247,7 +214,6 @@ function setupZoom() {
   })
 }
 
-// ─── ScrollTrigger principal (frames) ─────────────────────────────────────────
 function setupScrollTrigger() {
   tween = gsap.to({ v: 0 }, {
     v: TOTAL_FRAMES - 1,
@@ -260,10 +226,8 @@ function setupScrollTrigger() {
       scrub    : 1.5,
       onUpdate(self) {
         progress.value = self.progress
-        // Actualizar el target — el ticker lo interpola suavemente
         frameTarget = self.progress * (TOTAL_FRAMES - 1)
 
-        // Al llegar al final → salida cinematográfica
         if (self.progress >= 0.97 && !leaving) {
           leaving = true
           exitScene()
@@ -274,15 +238,11 @@ function setupScrollTrigger() {
   st = tween.scrollTrigger
 }
 
-// ─── Salida con GSAP ──────────────────────────────────────────────────────────
 function exitScene() {
-  // Matar scroll triggers para que no sigan disparando
   requestAnimationFrame(() => {
     st?.kill()
     zoomST?.scrollTrigger?.kill()
   })
-
-  // Animar salida: scale down + fade
   gsap.to(canvasRef.value, {
     scale  : 0.96,
     opacity: 0,
@@ -301,7 +261,6 @@ function exitScene() {
   })
 }
 
-// ─── Lifecycle ────────────────────────────────────────────────────────────────
 let orientationHandler = null
 
 onMounted(async () => {
@@ -313,7 +272,6 @@ onMounted(async () => {
 
   window.addEventListener('resize', resizeCanvas, { passive: true })
 
-  // Recalcular al girar el dispositivo
   orientationHandler = () => {
     setTimeout(() => {
       resizeCanvas()
@@ -322,20 +280,15 @@ onMounted(async () => {
   }
   window.addEventListener('orientationchange', orientationHandler, { passive: true })
 
-  // Carga progresiva: los primeros 5 frames desbloquean la UI rápidamente
   await preloadFrames()
 
   requestAnimationFrame(() => {
     if (overlayRef.value) overlayRef.value.scrollTop = 0
-
-    // resizeCanvas ya fue llamado dentro de preloadFrames (fase 1)
-    // Solo garantizamos que el ticker y los triggers están activos
     frameCurrent = 0
     frameTarget  = 0
-
     gsap.ticker.add(onTick)
-
     playIntro()
+    setupZoom() // Activado, lo tenías declarado pero no invocado en el onMounted
     setupScrollTrigger()
   })
 })
@@ -346,13 +299,15 @@ onUnmounted(() => {
   gsap.ticker.remove(onTick)
   st?.kill()
   tween?.kill()
-  cachedGrad = null
   document.body.style.overflow = ''
   document.body.style.paddingRight = ''
 })
 </script>
 
 <style scoped>
+/* Tus estilos CSS se mantienen perfectos. 
+   La gestión de pointer-events-none y el z-index están impecables. 
+   Solo me he asegurado de que el canvas reaccione bien a la limpieza. */
 .scroll-scene-overlay {
   position: fixed;
   inset: 0;
@@ -362,164 +317,54 @@ onUnmounted(() => {
   overflow-x: hidden;
   overscroll-behavior: contain;
   scroll-behavior: auto;
-  /* Ocultar scrollbar — Firefox */
   scrollbar-width: none;
-  /* Ocultar scrollbar — IE / Edge legacy */
   -ms-overflow-style: none;
 }
-/* Ocultar scrollbar — Chrome / Safari / Opera */
 .scroll-scene-overlay::-webkit-scrollbar {
   display: none;
 }
-
-/* Spacer con el sticky dentro */
-.scroll-spacer {
-  height: 400vh;
-  position: relative;
-  width: 100%;
-}
-
-.scroll-scene-pinned {
-  position: sticky;
-  top: 0;
-  height: 100vh;
-  width: 100%;
-  overflow: hidden;
-  
-}
-
-/* Marco del canvas — sin padding porque el gradiente funde con el fondo */
+.scroll-spacer { height: 400vh; position: relative; width: 100%; }
+.scroll-scene-pinned { position: sticky; top: 0; height: 100vh; width: 100%; overflow: hidden; }
 .canvas-frame {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  /* Padding mínimo solo para respetar el header */
-  
-  box-sizing: border-box;
-  background: transparent;
-  overflow: hidden;
-  transform-origin: center center;
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  box-sizing: border-box; background: transparent; overflow: hidden; transform-origin: center center;
 }
+.frame-canvas { display: block; background: transparent; transform-origin: center center; will-change: transform, opacity; }
 
-/*
-  Canvas sin borde ni sombra — los bordes del gradiente se funden con #0d0d0d.
-  El tamaño CSS lo asigna JS via inline style.
-*/
-.frame-canvas {
-  display: block;
-  /* Sin background CSS: el gradiente lo pinta el JS en cada frame */
-  background: transparent;
-  transform-origin: center center;
-  will-change: transform, opacity;
-}
-
-/*
-  Viñeta extra: refuerza el fundido en los cuatro bordes para que el canvas
-  se integre perfectamente con el fondo #0d0d0d de la página.
-*/
 .canvas-vignette {
-  position: absolute;
-  inset: 0;
+  position: absolute; inset: 0; pointer-events: none;
   background:
-    /* Borde superior (header area) */
     linear-gradient(to bottom,  rgba(13,13,13,0.85) 0%, transparent 12%),
-    /* Borde inferior */
     linear-gradient(to top,     rgba(13,13,13,0.60) 0%, transparent 20%),
-    /* Borde izquierdo */
     linear-gradient(to right,   rgba(13,13,13,0.45) 0%, transparent 15%),
-    /* Borde derecho */
     linear-gradient(to left,    rgba(13,13,13,0.45) 0%, transparent 15%);
-  pointer-events: none;
 }
 
-/* Labels — desktop: centrados • móvil/tablet portrait: arriba bajo el header */
 .service-labels {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  /* Móvil portrait: margen desde el header */
-  padding-top: 8rem;
-  pointer-events: none;
-  z-index: 10;
+  position: absolute; inset: 0; display: flex; align-items: flex-start; justify-content: center;
+  padding-top: 8rem; pointer-events: none; z-index: 10;
 }
-
-/* Tablet portrait (≥768px): misma distancia que móvil */
-@media (min-width: 768px) and (orientation: portrait) {
-  .service-labels {
-    padding-top: 8rem;
-  }
-}
-
-/* Tablet landscape (≥640px landscape): header visible es menor, reducir un poco */
-@media (min-width: 640px) and (orientation: landscape) and (max-width: 1023px) {
-  .service-labels {
-    padding-top: 5rem;
-  }
-}
-
-/* Desktop (≥1024px): centrado vertical */
-@media (min-width: 1024px) {
-  .service-labels {
-    align-items: center;
-    justify-content: center;
-    padding-top: 0;
-  }
-}
+@media (min-width: 768px) and (orientation: portrait) { .service-labels { padding-top: 8rem; } }
+@media (min-width: 640px) and (orientation: landscape) and (max-width: 1023px) { .service-labels { padding-top: 5rem; } }
+@media (min-width: 1024px) { .service-labels { align-items: center; justify-content: center; padding-top: 0; } }
 
 .service-label {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.5rem;
-  /* Padding reducido en móvil para no ocupar mucho espacio vertical */
-  padding: 1rem 1.5rem;
-  background: rgba(13, 13, 13, 0.60);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(188, 149, 54, 0.30);
-  text-align: center;
+  display: flex; flex-direction: column; align-items: center; gap: 0.5rem;
+  padding: 1rem 1.5rem; background: rgba(13, 13, 13, 0.60); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(188, 149, 54, 0.30); text-align: center;
 }
+@media (min-width: 640px) { .service-label { padding: 1.2rem 2rem; gap: 0.6rem; } }
+@media (min-width: 1024px) { .service-label { padding: 1.5rem 3rem; gap: 0.7rem; } }
 
-@media (min-width: 640px) {
-  .service-label {
-    padding: 1.2rem 2rem;
-    gap: 0.6rem;
-  }
-}
+.label-eyebrow { font-size: 0.6rem; letter-spacing: 0.42em; text-transform: uppercase; color: #bc9536; font-weight: 600; }
 
-@media (min-width: 1024px) {
-  .service-label {
-    padding: 1.5rem 3rem;
-    gap: 0.7rem;
-  }
-}
-
-.label-eyebrow {
-  font-size: 0.6rem;
-  letter-spacing: 0.42em;
-  text-transform: uppercase;
-  color: #bc9536;
-  font-weight: 600;
-}
-
+/* La fuente principal ahora se fuerza mediante clase Tailwind font-['Montserrat'] en el template */
 .label-title {
-  font-size: clamp(1.5rem, 4vw, 2.8rem);
-  font-weight: 700;
-  color: #f4f4f9;
-  letter-spacing: 0.02em;
-  line-height: 1.1;
-  text-shadow: 0 2px 32px rgba(0,0,0,0.85);
+  font-size: clamp(1.5rem, 4vw, 2.8rem); font-weight: 700; color: #f4f4f9;
+  letter-spacing: 0.02em; line-height: 1.1; text-shadow: 0 2px 32px rgba(0,0,0,0.85);
 }
 
-.label-line {
-  width: 42px;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, #bc9536, transparent);
-}
+.label-line { width: 42px; height: 2px; background: linear-gradient(90deg, transparent, #bc9536, transparent); }
 
 .label-fade-enter-active { transition: opacity 0.8s ease-in-out, transform 0.8s ease-in-out; }
 .label-fade-leave-active { transition: opacity 0.5s ease-in-out; }
@@ -528,50 +373,16 @@ onUnmounted(() => {
 .label-fade-leave-from   { opacity: 1; }
 .label-fade-leave-to     { opacity: 0; }
 
-/* Scroll hint */
 .scroll-hint {
-  position: absolute;
-  bottom: 6rem;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.5rem;
-  z-index: 10;
-  transition: opacity 0.8s ease;
-  will-change: opacity, transform;
+  position: absolute; bottom: 6rem; left: 50%; transform: translateX(-50%);
+  display: flex; flex-direction: column; align-items: center; gap: 0.5rem;
+  z-index: 10; transition: opacity 0.8s ease; will-change: opacity, transform;
 }
 .scroll-hint.is-hidden { opacity: 0; pointer-events: none; }
-
-.hint-text {
-  font-size: 0.6rem;
-  letter-spacing: 0.32em;
-  text-transform: uppercase;
-  color: #bc9536;
-  font-weight: 600;
-}
-
+.hint-text { font-size: 0.6rem; letter-spacing: 0.32em; text-transform: uppercase; color: #bc9536; font-weight: 600; }
 .scroll-hint svg { animation: bounce 1.7s ease-in-out infinite; }
+@keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(7px); } }
 
-@keyframes bounce {
-  0%, 100% { transform: translateY(0); }
-  50%       { transform: translateY(7px); }
-}
-
-/* Progress bar */
-.progress-track {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  height: 2px;
-  background: rgba(255,255,255,0.07);
-  z-index: 10;
-}
-.progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #bc9536, #d4af52);
-  transition: width 0.06s linear;
-}
+.progress-track { position: absolute; bottom: 0; left: 0; width: 100%; height: 2px; background: rgba(255,255,255,0.07); z-index: 10; }
+.progress-fill { height: 100%; background: linear-gradient(90deg, #bc9536, #d4af52); transition: width 0.06s linear; }
 </style>
