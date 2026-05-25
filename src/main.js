@@ -12,39 +12,98 @@ const AboutView    = () => import('./views/AboutView.vue')
 const ContactView  = () => import('./views/ContactView.vue')
 
 const routes = [
-  { path: '/',          redirect: '/inicio' },
-  { path: '/inicio',    component: HomeView,     name: 'home' },
-  { path: '/galeria',   component: GalleryView,  name: 'galeria' },
-  { path: '/servicios', component: ServicesView, name: 'servicios' },
-  { path: '/sobre-mi',  component: AboutView,    name: 'sobre-mi' },
-  { path: '/contacto',  component: ContactView,  name: 'contacto' },
+  { path: '/',          
+    component: HomeView,     
+    name: 'home',
+    meta: {
+      title: 'HEVCA Photo & Art | Fotografía profesional',
+      description:
+        'Fotografía profesional en México. Sesiones corporativas, comerciales, boudoir, eventos y newborn.'
+    }
+  },
+  { path: '/galeria',   
+    component: GalleryView,  
+    name: 'galeria',
+    meta: {
+      title: 'Galería | HEVCA Photo & Art',
+      description: 'Descubre nuestra colección de trabajos fotográficos en diferentes estilos y temáticas.'
+    }
+  },
+  { path: '/servicios', 
+    component: ServicesView, 
+    name: 'servicios', 
+    meta: { 
+      title: 'Servicios | HEVCA Photo & Art',
+      description: 'Sesiones corporativas, comerciales, boudoir, eventos y newborn en México.'
+     } 
+  },
+  { path: '/sobre-mi',  
+    component: AboutView,    
+    name: 'sobre-mi', 
+    meta: { 
+      title: 'Sobre Mí | HEVCA Photo & Art', 
+      description: 'Conoce más sobre HEVCA y su enfoque en la fotografía.' 
+    } 
+  },
+  { path: '/contacto',  
+    component: ContactView,  
+    name: 'contacto', 
+    meta: { 
+      title: 'Contacto | HEVCA Photo & Art', 
+      description: 'Contáctanos para más información sobre nuestros servicios.' 
+    } 
+  },
 ]
+
 
 const router = createRouter({
   history: createWebHistory(),
   routes,
+
   scrollBehavior(to, from, savedPosition) {
+    // Atrás/adelante navegador
     if (savedPosition) {
       return savedPosition
     }
-    
-    // Si la ruta destino tiene un hash
+
+    // Hashes inválidos
+    if (to.hash === '#' || to.hash === '#/') {
+      return { top: 0 }
+    }
+
+    // Anchors reales
     if (to.hash) {
-      // Bloqueamos los hashes problemáticos para que no lancen el warning CSS
-      if (to.hash === '#' || to.hash === '#/') {
-        return { top: 0 } 
-      }
-      
-      // Para anchors reales (ej: #contacto), hacemos scroll suave
       return {
         el: to.hash,
-        behavior: 'smooth',
+        behavior: 'smooth'
       }
     }
-    // Siempre volver arriba de todo instantáneamente al cambiar de ruta
-    return { top: 0 }
-  }
 
+    // Cambio normal de ruta:
+    // mostrar nueva vista ya arriba
+    return {
+      top: 0,
+      left: 0
+    }
+  }
+})
+
+router.beforeEach((to) => {
+  document.title =
+    to.meta.title || 'HEVCA Photo & Art'
+
+  const description =
+    document.querySelector(
+      'meta[name="description"]'
+    )
+
+  if (description) {
+    description.setAttribute(
+      'content',
+      to.meta.description ||
+      'Fotografía profesional en México.'
+    )
+  }
 })
 
 export default router

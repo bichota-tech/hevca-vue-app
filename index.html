@@ -1,28 +1,44 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es_MX">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="HEVCA Photo & Art – Fotografía profesional en México. Sesiones corporativas, comerciales, boudoir, eventos y newborn." />
-    <meta name="keywords" content="fotografía profesional, sesiones corporativas, fotografía comercial, boudoir, eventos, newborn, México" />
-    <meta name="author" content="HEVCA Photo & Art" />
     <meta name="robots" content="index, follow" />
-    <meta name="googlebot" content="index, follow" />
+    <link rel="canonical" href="https://hevca-vue-app.vercel.app/" />
     <meta property="og:title" content="HEVCA Photo & Art" />
     <meta property="og:description" content="HEVCA Photo & Art – Fotografía profesional en México. Sesiones corporativas, comerciales, boudoir, eventos y newborn." />
-    <meta property="og:image" content="/Canon_SL2_png/Frames_000.png" />
+    <meta property="og:image" content="https://hevca-vue-app.vercel.app/og-cover.webp" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
     <meta property="og:url" content="https://hevca-vue-app.vercel.app/" />
     <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="HEVCA Photo & Art" />
     <meta property="og:locale" content="es_MX" />
-    <meta property="og:locale:alternate" content="en_US" />
-    <meta property="og:instagram:hevca_photoart" content="hevca_photo_art" />
-    <meta property="og:tiktok:grettelheviac" content="hevca_photo_art" />
+    <meta property="og:site_name" content="HEVCA Photo & Art" />
+    <meta name="twitter:title" content="HEVCA Photo & Art" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:description" content="Fotografía profesional en México" />
+    <meta name="twitter:image" content="https://hevca-vue-app.vercel.app/og-cover.webp" />
+    <meta name="twitter:url" content="https://hevca-vue-app.vercel.app/" />
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "ProfessionalService",
+      "name": "HEVCA Photo & Art",
+      "url": "https://hevca-vue-app.vercel.app/",
+      "description": "Fotografía profesional en México. Sesiones corporativas, comerciales, boudoir, eventos y newborn.",
+      "sameAs": [
+        "https://www.instagram.com/hevca_photoart/",
+        "https://www.facebook.com/people/Hevca/100088259115416/",
+        "https://www.tiktok.com/@grettelheviac"
+        ]
+    }
+    </script>
 
     <!-- LCP hint alternativo: el mismo frame en formato WebP (mejor compresión, pero no soportado en Safari) -->
     <link rel="preload" href="/Canon_SL2_webp/Frames_000.webp" as="image" type="image/webp" fetchpriority="high">
     
-  
     <!-- Favicons -->
     <link rel="icon" type="image/png" href="/favicon/favicon-96x96.png" sizes="96x96" />
     <link rel="icon" type="image/svg+xml" href="/favicon/favicon.svg" />
@@ -48,9 +64,10 @@
       <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,300;0,400;0,500;0,600;0,700;0,900;1,400&display=swap" />
     </noscript>
 
-
-    <title>HEVCA Photo & Art</title>
+    <title>HEVCA Photo & Art | Fotografía profesional en México</title>
+  
   </head>
+
   <body>
     <div id="app"></div>
     <script type="module" src="/src/main.js"></script>
