@@ -27,6 +27,11 @@ body {
   overflow-x: hidden;
 }
 
+main{
+  width: 100%;
+  height: 100vh;
+}
+
 /* ─── Layout helpers ─────────────────────────────────────── */
 /* Contenedor de página coherente en todos los tamaños */
 .page-container {
