@@ -12,7 +12,7 @@
           <div class="canvas-vignette" ref="vignetteRef" />
         </div>
 
-        <div class="service-labels">
+        <!-- <div class="service-labels">
           <Transition name="label-fade">
             <div v-if="activeLabel" :key="activeLabel" class="service-label">
               <span class="label-eyebrow">Servicios</span>
@@ -20,7 +20,7 @@
               <div class="label-line" />
             </div>
           </Transition>
-        </div>
+        </div> -->
 
         <div class="scroll-hint" ref="hintRef" :class="{ 'is-hidden': progress > 0.04 }">
           <span class="hint-text">Scroll</span>
@@ -47,19 +47,21 @@ gsap.registerPlugin(ScrollTrigger)
 
 let _introShown = false
 
+const isMobile = window.innerWidth < 768
+
 const TOTAL_FRAMES = 51
-const BASE_PATH    = '/Canon_SL2_webp/'
+const BASE_PATH = isMobile ? '/Canon_SL2_webp_mobile/' : '/Canon_SL2_webp/'
 function frameName(i) { 
   const paddedIndex = i.toString().padStart(3, '0')
   return `${BASE_PATH}Frames_${paddedIndex}.webp` 
 }
 
-const SEGMENTS = [
+/* const SEGMENTS = [
   { from: 1,  to: 8,  label: 'Retrato Corporativo'  }, // Cambiado a 1
   { from: 10, to: 15, label: 'Fotografía Comercial' },
   { from: 17, to: 22, label: 'Boudoir & Artístico'  },
   { from: 24, to: 29, label: 'Eventos & Especiales' },
-]
+] */
 
 const visible    = ref(!_introShown)
 const progress   = ref(0)
@@ -82,14 +84,15 @@ let frameCurrent = 0
 let lastDrawnIdx = -1
 
 let st = null, zoomST = null, tween = null
+let orientationHandler = null
 
-const activeLabel = computed(() => {
+/* const activeLabel = computed(() => {
   const f = Math.floor(progress.value * TOTAL_FRAMES) + 1
   for (const seg of SEGMENTS) {
     if (f >= seg.from && f < seg.to) return seg.label
   }
   return null
-})
+}) */
 
 // ─── 1. Dibujar frame (Optimizado sin Background Fill) ──────────────
 function drawFrame(index) {
@@ -105,16 +108,17 @@ function drawFrame(index) {
   const sy = (logH - sh) / 2
   
   // Limpiamos opcionalmente (muy rápido) y dibujamos la imagen plana
-  ctx.clearRect(0, 0, logW, logH)
+  // ctx.clearRect(0, 0, logW, logH)
   ctx.drawImage(img, 0, 0, img.naturalWidth, img.naturalHeight, sx, sy, sw, sh)
 }
 
-// ─── 2. GSAP Ticker (Lerp ajustado) ──────────────────────────────────
+// ─── 2. GSAP Ticker (Optimizado sin Lerp) ─────────────────────────────
 function onTick() {
   if (!loaded || leaving) return
-  // GSAP ya suaviza el 'frameTarget' mediante su 'scrub: 1.5'. 
-  // Mantenemos tu lerp pero con un factor ágil (0.3) para evitar doble latencia
-  frameCurrent += (frameTarget - frameCurrent) * 0.3
+  
+  // Asignación directa. El tween ya nos da la fluidez exacta en el tiempo.
+  frameCurrent = frameTarget 
+  
   const idx = Math.min(TOTAL_FRAMES - 1, Math.max(0, Math.round(frameCurrent)))
   
   if (idx !== lastDrawnIdx) {
@@ -218,33 +222,42 @@ function setupZoom() {
 }
 
 function setupScrollTrigger() {
+  // 1. Preparamos la animación que irá del frame 0 al 50 de forma automática
   tween = gsap.to({ v: 0 }, {
     v: TOTAL_FRAMES - 1,
-    ease: 'none',
-    scrollTrigger: {
-      scroller : overlayRef.value,
-      trigger  : spacerRef.value,
-      start    : 'top top',
-      end      : 'bottom bottom',
-      scrub    : 1.5,
-      onUpdate(self) {
-        progress.value = self.progress
-        frameTarget = self.progress * (TOTAL_FRAMES - 1)
-
-        if (self.progress >= 0.97 && !leaving) {
-          leaving = true
-          exitScene()
-        }
-      },
+    duration: 4.1, // <-- El tiempo en segundos que tardará en reproducirse completa
+    ease: 'none', // Velocidad constante
+    paused: true, // Se mantiene a la espera
+    onUpdate() {
+      const val = this.targets()[0].v
+      frameTarget = val
+      progress.value = val / (TOTAL_FRAMES - 1)
     },
+    onComplete() {
+      // Cuando termina el "video", salimos automáticamente de la escena
+      if (!leaving) {
+        leaving = true
+        exitScene()
+      }
+    }
   })
-  st = tween.scrollTrigger
+
+  // 2. Usamos Observer para interceptar el gesto del usuario
+  st = ScrollTrigger.observe({
+    target: overlayRef.value,
+    type: "wheel,touch,pointer", // Cubre ratón, trackpad y pantallas táctiles
+    preventDefault: true, // Evita comportamientos raros en móviles
+    onUp: () => tween.play(),   // Si intenta scrollear o arrastrar
+    onDown: () => tween.play(), 
+    onClick: () => tween.play() // ¡Incluso si hace un tap directo!
+  })
 }
 
 function exitScene() {
   requestAnimationFrame(() => {
     st?.kill()
-    zoomST?.scrollTrigger?.kill()
+    if (zoomST) zoomST.kill()
+    //zoomST?.scrollTrigger?.kill()
   })
   gsap.to(canvasRef.value, {
     scale  : 0.96,
@@ -264,7 +277,16 @@ function exitScene() {
   })
 }
 
-let orientationHandler = null
+// 1. Declaramos la variable del timeout a nivel superior
+let resizeTimeout = null 
+
+// 2. Creamos la función manejadora con el debounce
+function handleDebouncedResize() {
+  clearTimeout(resizeTimeout)
+  resizeTimeout = setTimeout(() => {
+    resizeCanvas()
+  }, 150) // 150ms de respiro para la CPU
+}
 
 onMounted(async () => {
   if (_introShown) return
@@ -273,7 +295,8 @@ onMounted(async () => {
   document.body.style.overflow = 'hidden'
   if (sbWidth > 0) document.body.style.paddingRight = `${sbWidth}px`
 
-  window.addEventListener('resize', resizeCanvas, { passive: true })
+  // 3. Pasamos nuestra nueva función al listener
+  window.addEventListener('resize', handleDebouncedResize, { passive: true })
 
   orientationHandler = () => {
     setTimeout(() => {
@@ -291,20 +314,29 @@ onMounted(async () => {
     frameTarget  = 0
     gsap.ticker.add(onTick)
     playIntro()
-    setupZoom() // Activado, lo tenías declarado pero no invocado en el onMounted
+    setupZoom() 
     setupScrollTrigger()
   })
 })
 
 onUnmounted(() => {
-  window.removeEventListener('resize', resizeCanvas)
+  // 4. Removemos la función referenciada y limpiamos cualquier timeout residual
+  window.removeEventListener('resize', handleDebouncedResize)
+  clearTimeout(resizeTimeout)
+  
   if (orientationHandler) window.removeEventListener('orientationchange', orientationHandler)
+  
   gsap.ticker.remove(onTick)
   st?.kill()
   tween?.kill()
+  
+  // Añadimos también la limpieza del zoomST del Paso 4
+  if (zoomST) zoomST.kill() 
+  
   document.body.style.overflow = ''
   document.body.style.paddingRight = ''
 })
+
 </script>
 
 <style scoped>
@@ -316,7 +348,7 @@ onUnmounted(() => {
   inset: 0;
   z-index: 30;
   background: #0d0d0d;
-  overflow-y: auto;
+  overflow-y: hidden;
   overflow-x: hidden;
   overscroll-behavior: contain;
   scroll-behavior: auto;
@@ -326,7 +358,7 @@ onUnmounted(() => {
 .scroll-scene-overlay::-webkit-scrollbar {
   display: none;
 }
-.scroll-spacer { height: 400vh; position: relative; width: 100%; }
+.scroll-spacer { height: 100vh; position: relative; width: 100%; }
 .scroll-scene-pinned { position: sticky; top: 0; height: 100vh; width: 100%; overflow: hidden; }
 .canvas-frame {
   position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
@@ -353,7 +385,7 @@ onUnmounted(() => {
     linear-gradient(to left,    rgba(13,13,13,0.45) 0%, transparent 15%);
 }
 
-.service-labels {
+/* .service-labels {
   position: absolute; inset: 0; display: flex; align-items: flex-start; justify-content: center;
   padding-top: 8rem; pointer-events: none; z-index: 10;
 }
@@ -371,7 +403,6 @@ onUnmounted(() => {
 
 .label-eyebrow { font-size: 0.6rem; letter-spacing: 0.42em; text-transform: uppercase; color: #bc9536; font-weight: 600; }
 
-/* La fuente principal ahora se fuerza mediante clase Tailwind font-['Montserrat'] en el template */
 .label-title {
   font-size: clamp(1.5rem, 4vw, 2.8rem); font-weight: 700; color: #f4f4f9;
   letter-spacing: 0.02em; line-height: 1.1; text-shadow: 0 2px 32px rgba(0,0,0,0.85);
@@ -385,6 +416,7 @@ onUnmounted(() => {
 .label-fade-enter-to     { opacity: 1; transform: translateY(0); }
 .label-fade-leave-from   { opacity: 1; }
 .label-fade-leave-to     { opacity: 0; }
+*/
 
 .scroll-hint {
   position: absolute; bottom: 6rem; left: 50%; transform: translateX(-50%);
