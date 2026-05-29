@@ -10,6 +10,7 @@ const GalleryView  = () => import('./views/GalleryView.vue')
 const ServicesView = () => import('./views/ServicesView.vue')
 const AboutView    = () => import('./views/AboutView.vue')
 const ContactView  = () => import('./views/ContactView.vue')
+const NotFound     = () => import('./views/NotFound.vue')
 
 const routes = [
   { path: '/',          
@@ -53,6 +54,15 @@ const routes = [
       description: 'Contáctanos para más información sobre nuestros servicios.' 
     } 
   },
+  { path: '/:pathMatch(.*)*', 
+    name: 'not-found',
+    component: NotFound,
+    meta: {
+      title: '404 No Encontrado | HEVCA Photo & Art',
+      description: 'Página no encontrada.',
+      hideFooter: true // Ocultar el footer en la pagina 404
+    }
+  }
 ]
 
 

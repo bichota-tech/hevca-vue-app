@@ -7,7 +7,7 @@
       </Transition>
     </RouterView>
   </main>
-  <AppFooter />
+  <AppFooter v-if="!$route.meta.hideFooter" />
 </template>
 
 <script setup>
