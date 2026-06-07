@@ -1,6 +1,9 @@
 <template>
-  <div v-if="showBanner" class="fixed inset-x-0 bottom-0 z-50 bg-black/95 border-t border-gold px-4 py-4 shadow-2xl sm:px-6">
-    <div class="mx-auto flex max-w-7xl flex-col gap-3 text-sm text-white sm:flex-row sm:items-center sm:justify-between">
+  <div
+    v-if="showBanner"
+    class="fixed bottom-4 right-4 z-50 w-full max-w-sm rounded-3xl border border-gold/50 bg-black/95 p-5 shadow-2xl backdrop-blur-md sm:right-6"
+  >
+    <div class="flex flex-col gap-4 text-sm text-white">
       <div class="space-y-2">
         <p class="max-w-3xl leading-6">
           Este sitio usa cookies necesarias para el funcionamiento básico y para mejorar la experiencia.
@@ -8,7 +11,7 @@
         </p>
       </div>
 
-      <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+      <div class="flex flex-col gap-3 sm:flex-row sm:justify-end">
         <button
           type="button"
           @click="acceptCookies"

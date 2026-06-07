@@ -11,7 +11,9 @@
     </main>
 
     <!-- Use v-show to avoid layout jumps when toggling footer visibility -->
-    <AppFooter v-show="!$route.meta.hideFooter" />    <CookieConsentBanner />  </div>
+    <AppFooter v-show="!$route.meta.hideFooter" />
+    <CookieConsentBanner />
+  </div>
 </template>
 
 <script setup>
@@ -43,6 +45,7 @@ onMounted(async () => {
   } catch (err) {
     console.error('Error applying global settings:', err)
   }
+  loadConsent()
 })
 </script>
 
