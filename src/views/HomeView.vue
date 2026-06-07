@@ -1,7 +1,7 @@
 <template>
   <div>
     <!-- Scroll Frame Animation -->
-    <ScrollFrameScene />
+    <ScrollFrameScene v-if="showScrollScene" />
 
     <!-- Hero Carousel -->
     <HeroCarousel />
@@ -165,7 +165,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import HeroCarousel from '../components/HeroCarousel.vue'
 import LightboxModal from '../components/LightboxModal.vue'
 import ScrollFrameScene from '../components/ScrollFrameScene.vue'
@@ -179,6 +179,7 @@ const { settings, load: loadSettings } = useSiteSettings()
 const featured = ref([])
 const lbOpen  = ref(false)
 const lbIndex = ref(0)
+const showScrollScene = ref(false)
 
 const openLb = (i) => { lbIndex.value = i; lbOpen.value = true }
 
@@ -195,7 +196,16 @@ const testimonials = ref([
   { img: '/multimedia/estudio.jpg', quote: 'Las fotos de mi bebé son un tesoro. Grettel tiene un talento extraordinario.',              name: 'Marta Pérez',  role: 'Madre y Asesora Comercial' },
 ])
 
+let mediaQuery = null
+const handleMediaChange = event => {
+  showScrollScene.value = event.matches
+}
+
 onMounted(async () => {
+  mediaQuery = window.matchMedia('(min-width: 768px)')
+  showScrollScene.value = mediaQuery.matches
+  mediaQuery.addEventListener('change', handleMediaChange)
+
   // Lanzar todas las peticiones en paralelo para máximo rendimiento
   await Promise.all([
     load(),
@@ -209,6 +219,12 @@ onMounted(async () => {
   ])
 
   featured.value = getFeatured(4)
+})
+
+onUnmounted(() => {
+  if (mediaQuery) {
+    mediaQuery.removeEventListener('change', handleMediaChange)
+  }
 })
 
 
