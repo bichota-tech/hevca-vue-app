@@ -1,6 +1,12 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import handler from './contact.js'
 
+const jsonHeaders = {
+  'content-type': 'application/json',
+  'content-length': '123',
+  origin: 'http://localhost:5173',
+}
+
 const createResponse = () => {
   const res = {}
   res.status = vi.fn(() => res)
@@ -13,6 +19,7 @@ describe('api/contact handler', () => {
   afterEach(() => {
     vi.restoreAllMocks()
     delete process.env.WEB3FORMS_KEY
+    delete process.env.ALLOWED_ORIGINS
   })
 
   it('returns 405 for non-POST methods', async () => {
@@ -26,9 +33,39 @@ describe('api/contact handler', () => {
     expect(res.json).toHaveBeenCalledWith({ success: false, error: 'Method not allowed' })
   })
 
+  it('returns 415 when content type is not JSON', async () => {
+    const req = {
+      method: 'POST',
+      headers: { 'content-type': 'text/plain' },
+      json: async () => ({})
+    }
+    const res = createResponse()
+
+    await handler(req, res)
+
+    expect(res.status).toHaveBeenCalledWith(415)
+    expect(res.json).toHaveBeenCalledWith({ success: false, error: 'Content type must be application/json.' })
+  })
+
+  it('returns 403 for disallowed origin', async () => {
+    process.env.ALLOWED_ORIGINS = 'http://localhost:5173'
+    const req = {
+      method: 'POST',
+      headers: { ...jsonHeaders, origin: 'https://evil.com' },
+      json: async () => ({ name: 'Grettel', email: 'test@example.com', service: 'Boudoir & Artístico', message: 'Hola', botcheck: false }),
+    }
+    const res = createResponse()
+
+    await handler(req, res)
+
+    expect(res.status).toHaveBeenCalledWith(403)
+    expect(res.json).toHaveBeenCalledWith({ success: false, error: 'Origin not allowed.' })
+  })
+
   it('returns validation errors for missing required fields', async () => {
     const req = {
       method: 'POST',
+      headers: jsonHeaders,
       json: async () => ({ name: '', email: '', service: '', message: '', botcheck: false }),
     }
     const res = createResponse()
@@ -49,6 +86,7 @@ describe('api/contact handler', () => {
   it('returns 500 when WEB3FORMS_KEY is missing', async () => {
     const req = {
       method: 'POST',
+      headers: jsonHeaders,
       json: async () => ({
         name: 'Grettel',
         email: 'test@example.com',
@@ -68,6 +106,35 @@ describe('api/contact handler', () => {
     })
   })
 
+  it('enforces basic rate limiting', async () => {
+    process.env.WEB3FORMS_KEY = 'test-key'
+    const fetchMock = vi.fn(() => Promise.resolve({ json: async () => ({ success: true }) }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const req = {
+      method: 'POST',
+      headers: { ...jsonHeaders, 'x-forwarded-for': '10.0.0.1' },
+      json: async () => ({
+        name: 'Grettel',
+        email: 'test@example.com',
+        service: 'Boudoir & Artístico',
+        message: 'Hola',
+        botcheck: false,
+      }),
+    }
+    const res = createResponse()
+
+    for (let i = 0; i < 9; i += 1) {
+      await handler(req, res)
+    }
+
+    expect(res.status).toHaveBeenLastCalledWith(429)
+    expect(res.json).toHaveBeenLastCalledWith({
+      success: false,
+      error: 'Too many requests. Please wait and try again.',
+    })
+  })
+
   it('forwards the request to Web3Forms when input is valid', async () => {
     process.env.WEB3FORMS_KEY = 'test-key'
     const fetchMock = vi.fn(() => Promise.resolve({ json: async () => ({ success: true }) }))
@@ -75,6 +142,7 @@ describe('api/contact handler', () => {
 
     const req = {
       method: 'POST',
+      headers: { ...jsonHeaders, 'x-forwarded-for': '5.5.5.5' },
       json: async () => ({
         name: 'Grettel',
         email: 'test@example.com',
