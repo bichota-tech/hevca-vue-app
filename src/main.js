@@ -117,4 +117,27 @@ router.beforeEach((to) => {
 })
 
 export default router
+
+// Evita handlers inline para la carga de Google Fonts (resuelve violación CSP)
+function attachFontLoadListener() {
+  try {
+    const fontLink = document.querySelector("link[href*='fonts.googleapis.com']")
+    if (!fontLink) return
+    // Sólo si está usando la técnica media=print para carga no bloqueante
+    if (fontLink.media === 'print') {
+      fontLink.addEventListener('load', () => { fontLink.media = 'all' })
+      // Fallback: si por alguna razón no dispara load, forzamos tras 3s
+      setTimeout(() => { if (fontLink.media === 'print') fontLink.media = 'all' }, 3000)
+    }
+  } catch (e) {
+    // no-op
+  }
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', attachFontLoadListener, { once: true })
+} else {
+  attachFontLoadListener()
+}
+
 createApp(App).use(router).use(VueMasonry).mount('#app')
