@@ -246,7 +246,7 @@ function setupScrollTrigger() {
   st = ScrollTrigger.observe({
     target: overlayRef.value,
     type: "wheel,touch,pointer", // Cubre ratón, trackpad y pantallas táctiles
-    preventDefault: true, // Evita comportamientos raros en móviles
+    preventDefault: false, // No forzamos preventDefault en listeners pasivos
     onUp: () => tween.play(),   // Si intenta scrollear o arrastrar
     onDown: () => tween.play(), 
     onClick: () => tween.play() // ¡Incluso si hace un tap directo!
@@ -351,6 +351,7 @@ onUnmounted(() => {
   overflow-y: hidden;
   overflow-x: hidden;
   overscroll-behavior: contain;
+  touch-action: none;
   scroll-behavior: auto;
   scrollbar-width: none;
   -ms-overflow-style: none;
