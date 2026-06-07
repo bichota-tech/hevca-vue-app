@@ -248,6 +248,7 @@ onUnmounted(() => {
 @media (max-width: 767px) {
   .home-hero-bg {
     background-size: 100% auto;
+    background-attachment: scroll;
   }
 }
 
