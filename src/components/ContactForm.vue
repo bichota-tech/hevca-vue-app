@@ -2,7 +2,11 @@
   <form @submit.prevent="handleSubmit" class="flex flex-col gap-5" novalidate>
     <!-- Nombre -->
     <div class="relative">
+      <label class="form-label" for="contact-name">
+        Nombre completo <span class="required-mark">*</span>
+      </label>
       <input
+        id="contact-name"
         v-model="form.name"
         type="text"
         name="Nombre cliente"
@@ -10,13 +14,18 @@
         required
         class="form-input"
         :class="{ 'border-red-500': errors.name }"
+        aria-required="true"
       />
       <p v-if="errors.name" class="text-red-400 text-xs mt-1">{{ errors.name }}</p>
     </div>
 
     <!-- Email -->
     <div class="relative">
+      <label class="form-label" for="contact-email">
+        Correo electrónico <span class="required-mark">*</span>
+      </label>
       <input
+        id="contact-email"
         v-model="form.email"
         type="email"
         name="Email"
@@ -25,13 +34,17 @@
         autocomplete="email"
         class="form-input"
         :class="{ 'border-red-500': errors.email }"
+        aria-required="true"
       />
       <p v-if="errors.email" class="text-red-400 text-xs mt-1">{{ errors.email }}</p>
     </div>
 
     <!-- Servicio -->
     <div>
-      <select v-model="form.service" name="Servicio" required class="form-input" :class="{ 'border-red-500': errors.service }">
+      <label class="form-label" for="contact-service">
+        Servicio deseado <span class="required-mark">*</span>
+      </label>
+      <select id="contact-service" v-model="form.service" name="Servicio" required class="form-input" :class="{ 'border-red-500': errors.service }" aria-required="true">
         <option value="" disabled>Selecciona la sesión que te ha gustado</option>
         <option v-for="opt in serviceOptions" :key="opt" :value="opt">{{ opt }}</option>
       </select>
@@ -151,6 +164,18 @@ const handleSubmit = async () => {
 </script>
 
 <style scoped>
+.form-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #f4f4f9;
+}
+
+.required-mark {
+  color: #bc9536;
+}
+
 .form-input {
   width: 100%;
   padding: 0.85rem 1rem;
