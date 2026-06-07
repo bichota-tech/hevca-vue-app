@@ -7,4 +7,14 @@ export default defineConfig({
     vue(),
     tailwindcss(),
   ],
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: 'src/setupTests.js',
+    include: ['src/**/*.{test,spec}.{js,ts}', 'api/**/*.{test,spec}.{js,ts}'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'lcov'],
+    },
+  },
 })
