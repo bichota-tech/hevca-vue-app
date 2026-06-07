@@ -38,6 +38,17 @@ const saveConsent = (value) => {
   setCookie(COOKIE_NAME, value, COOKIE_MAX_AGE_DAYS)
 }
 
+const deleteCookie = (name) => {
+  if (typeof document === 'undefined') return
+  const secure = location.protocol === 'https:' ? '; Secure' : ''
+  document.cookie = `${name}=; path=/; max-age=0; SameSite=Lax${secure}`
+}
+
+const clearConsent = () => {
+  consent.value = null
+  deleteCookie(COOKIE_NAME)
+}
+
 export function useCookieConsent() {
   return {
     consent: readonly(consent),
@@ -46,5 +57,6 @@ export function useCookieConsent() {
     loadConsent,
     acceptCookies: () => saveConsent('accepted'),
     declineCookies: () => saveConsent('declined'),
+    clearConsent,
   }
 }

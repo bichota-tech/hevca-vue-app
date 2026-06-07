@@ -79,11 +79,16 @@
         Desarrollado por
         <a href="http://github.com/bichota-tech" target="_blank" class="text-[#bc9536] font-semibold hover:underline">ACMA</a>.
       </p>
+      <p class="mt-2">
+        <button @click="openCookiePrefs" class="text-[#9ca3af] text-xs underline hover:text-[#bc9536]">Preferencias de cookies</button>
+      </p>
     </div>
   </footer>
 </template>
 
 <script setup>
+import { useCookieConsent } from '../composables/useCookieConsent.js'
+
 const navLinks = [
   { to: '/',          label: 'Inicio' },
   { to: '/servicios', label: 'Servicios' },
@@ -91,6 +96,12 @@ const navLinks = [
   { to: '/sobre-mi',  label: 'Sobre Mí' },
   { to: '/contacto',  label: 'Contacto' },
 ]
+
+const { clearConsent } = useCookieConsent()
+
+const openCookiePrefs = () => {
+  clearConsent()
+}
 </script>
 
 <style scoped>
