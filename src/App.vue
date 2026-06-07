@@ -1,13 +1,18 @@
 <template>
-  <AppHeader />
-  <main>
-    <RouterView v-slot="{ Component }">
-      <Transition name="fade" mode="out-in">
-        <component :is="Component" :key="$route.path" />
-      </Transition>
-    </RouterView>
-  </main>
-  <AppFooter v-if="!$route.meta.hideFooter" />
+  <div class="min-h-screen flex flex-col">
+    <AppHeader />
+
+    <main class="flex-1">
+      <RouterView v-slot="{ Component }">
+        <Transition name="fade" mode="out-in">
+          <component :is="Component" :key="$route.path" />
+        </Transition>
+      </RouterView>
+    </main>
+
+    <!-- Use v-show to avoid layout jumps when toggling footer visibility -->
+    <AppFooter v-show="!$route.meta.hideFooter" />
+  </div>
 </template>
 
 <script setup>
