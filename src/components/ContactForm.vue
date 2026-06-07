@@ -71,7 +71,7 @@
         ✅ ¡Mensaje enviado con éxito! Te contactaré pronto.
       </div>
       <div v-else-if="serverError" class="bg-red-500/15 border border-red-500/40 text-red-400 text-sm text-center py-3 rounded">
-        ❌ Hubo un error. Inténtalo de nuevo o escríbeme por WhatsApp.
+        ❌ {{ errorMessage || 'Hubo un error. Inténtalo de nuevo o escríbeme por WhatsApp.' }}
       </div>
     </Transition>
   </form>
@@ -85,6 +85,7 @@ const errors = reactive({})
 const sending = ref(false)
 const success = ref(false)
 const serverError = ref(false)
+const errorMessage = ref('')
 
 const serviceOptions = [
   'Retrato Corporativo',
@@ -113,26 +114,36 @@ const handleSubmit = async () => {
   serverError.value = false
 
   try {
-    const res = await fetch('https://api.web3forms.com/submit', {
+    const res = await fetch('/api/contact', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
       body: JSON.stringify({
-        access_key: import.meta.env.VITE_WEB3FORMS_KEY,
-        'Nombre cliente': form.name,
-        'Email': form.email,
-        'Servicio': form.service,
-        'Mensaje': form.message,
+        name: form.name,
+        email: form.email,
+        service: form.service,
+        message: form.message,
+        botcheck: form.botcheck,
       })
     })
     const data = await res.json()
+
     if (data.success) {
       success.value = true
       Object.assign(form, { name: '', email: '', service: '', message: '' })
+      return
+    }
+
+    if (data.errors) {
+      Object.assign(errors, data.errors)
+      serverError.value = false
+      errorMessage.value = ''
     } else {
       serverError.value = true
+      errorMessage.value = data.error || data.message || 'Hubo un error al enviar el formulario.'
     }
   } catch {
     serverError.value = true
+    errorMessage.value = 'No se pudo enviar el mensaje. Intenta de nuevo más tarde.'
   } finally {
     sending.value = false
   }
