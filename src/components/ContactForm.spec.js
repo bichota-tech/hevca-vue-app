@@ -3,6 +3,15 @@ import { vi } from 'vitest'
 import ContactForm from './ContactForm.vue'
 
 describe('ContactForm', () => {
+  let fetchMock
+
+  beforeEach(() => {
+    fetchMock = vi.fn().mockResolvedValue({
+      json: async () => ({ success: true, enabled: false }),
+    })
+    vi.stubGlobal('fetch', fetchMock)
+  })
+
   afterEach(() => {
     vi.restoreAllMocks()
   })
@@ -30,10 +39,9 @@ describe('ContactForm', () => {
   })
 
   it('submits the form when input is valid', async () => {
-    const fetchMock = vi.fn(() => Promise.resolve({
-      json: async () => ({ success: true }),
-    }))
-    vi.stubGlobal('fetch', fetchMock)
+    fetchMock
+      .mockResolvedValueOnce({ json: async () => ({ success: true, enabled: false }) })
+      .mockResolvedValueOnce({ json: async () => ({ success: true }) })
 
     render(ContactForm)
 
@@ -44,7 +52,7 @@ describe('ContactForm', () => {
 
     await fireEvent.click(screen.getByRole('button', { name: /Enviar Mensaje/i }))
 
-    expect(fetchMock).toHaveBeenCalledWith('/api/contact', expect.objectContaining({ method: 'POST' }))
+    expect(fetchMock).toHaveBeenNthCalledWith(2, '/api/contact', expect.objectContaining({ method: 'POST' }))
     expect(await screen.findByText(/¡Mensaje enviado con éxito!/i)).toBeInTheDocument()
   })
 })

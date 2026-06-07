@@ -1,42 +1,4 @@
-const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000
-const MAX_REQUESTS_PER_WINDOW = 8
-const MAX_BODY_SIZE_BYTES = 10 * 1024
-const DEFAULT_ALLOWED_ORIGINS = ['http://localhost:5173', 'http://127.0.0.1:5173']
-
-const rateLimitMap = new Map()
-
-const getClientIp = (req) => {
-  const forwarded = req.headers['x-forwarded-for']
-  if (forwarded) return forwarded.split(',')[0].trim()
-  return req.socket?.remoteAddress || 'unknown'
-}
-
-const getAllowedOrigins = () => {
-  const env = process.env.ALLOWED_ORIGINS
-  if (!env) return DEFAULT_ALLOWED_ORIGINS
-  return env.split(',').map((origin) => origin.trim()).filter(Boolean)
-}
-
-const extractOrigin = (value) => {
-  if (!value) return null
-  try {
-    return new URL(value).origin
-  } catch {
-    return null
-  }
-}
-
-const isOriginAllowed = (origin, allowedOrigins) => {
-  if (!origin) return true
-  const normalized = origin.toLowerCase()
-  return allowedOrigins.some((allowedOrigin) => {
-    const normalizedAllowed = allowedOrigin.toLowerCase()
-    if (normalizedAllowed.startsWith('*.')) {
-      return normalized.endsWith(normalizedAllowed.slice(1))
-    }
-    return normalized === normalizedAllowed
-  })
-}
+import { extractOrigin, getAllowedOrigins, isOriginAllowed, incrementRateLimit, MAX_BODY_SIZE_BYTES, verifyHmacToken } from './_security.js'
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -66,23 +28,12 @@ export default async function handler(req, res) {
     return res.status(403).json({ success: false, error: 'Referer not allowed.' })
   }
 
-  const clientIp = getClientIp(req)
-  const now = Date.now()
-  const entry = rateLimitMap.get(clientIp) || { count: 0, windowStart: now }
-
-  if (now - entry.windowStart > RATE_LIMIT_WINDOW_MS) {
-    entry.count = 0
-    entry.windowStart = now
+  const rateLimitResult = incrementRateLimit(req)
+  if (!rateLimitResult.success) {
+    return res.status(rateLimitResult.status).json({ success: false, error: rateLimitResult.error })
   }
 
-  entry.count += 1
-  rateLimitMap.set(clientIp, entry)
-
-  if (entry.count > MAX_REQUESTS_PER_WINDOW) {
-    return res.status(429).json({ success: false, error: 'Too many requests. Please wait and try again.' })
-  }
-
-  const { name, email, service, message, botcheck } = await req.json()
+  const { name, email, service, message, botcheck, turnstileToken, hmacToken } = await req.json()
   const errors = {}
   const sanitizedName = typeof name === 'string' ? name.trim() : ''
   const sanitizedEmail = typeof email === 'string' ? email.trim() : ''
@@ -91,6 +42,36 @@ export default async function handler(req, res) {
 
   if (botcheck) {
     return res.status(400).json({ success: false, error: 'Bot detected' })
+  }
+
+  const TURNSTILE_SECRET_KEY = process.env.TURNSTILE_SECRET_KEY
+  const HMAC_SECRET_KEY = process.env.HMAC_SECRET_KEY
+
+  if (HMAC_SECRET_KEY) {
+    const hmacValidation = verifyHmacToken(HMAC_SECRET_KEY, hmacToken, originHeader || refererHeader)
+    if (!hmacValidation.success) {
+      return res.status(401).json({ success: false, error: hmacValidation.error })
+    }
+  }
+
+  if (TURNSTILE_SECRET_KEY) {
+    if (!turnstileToken) {
+      return res.status(403).json({ success: false, error: 'Captcha token missing.' })
+    }
+
+    const verifyResponse = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        secret: TURNSTILE_SECRET_KEY,
+        response: turnstileToken,
+      }),
+    })
+
+    const verifyData = await verifyResponse.json()
+    if (!verifyData.success) {
+      return res.status(403).json({ success: false, error: 'Captcha validation failed.' })
+    }
   }
 
   if (!sanitizedName) {

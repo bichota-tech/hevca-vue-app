@@ -67,6 +67,12 @@
       <input v-model="form.botcheck" type="checkbox" name="botcheck" tabindex="-1" autocomplete="off" />
     </div>
 
+    <!-- Cloudflare Turnstile captcha -->
+    <div v-if="turnstileEnabled" class="relative">
+      <div ref="turnstileContainer" id="turnstile-widget" class="turnstile-widget"></div>
+      <p v-if="errors.turnstileToken" class="text-red-400 text-xs mt-1">{{ errors.turnstileToken }}</p>
+    </div>
+
     <!-- Submit -->
 
     <button
@@ -91,7 +97,7 @@
 </template>
 
 <script setup>
-import { reactive, ref } from 'vue'
+import { reactive, ref, onMounted } from 'vue'
 
 const form = reactive({ name: '', email: '', service: '', message: '', botcheck: false })
 const errors = reactive({})
@@ -99,6 +105,13 @@ const sending = ref(false)
 const success = ref(false)
 const serverError = ref(false)
 const errorMessage = ref('')
+const turnstileToken = ref('')
+const hmacToken = ref('')
+const turnstileContainer = ref(null)
+const turnstileWidgetId = ref(null)
+
+const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY || ''
+const turnstileEnabled = !!turnstileSiteKey
 
 const serviceOptions = [
   'Retrato Corporativo',
@@ -112,15 +125,90 @@ const serviceOptions = [
 
 const validate = () => {
   Object.keys(errors).forEach(k => delete errors[k])
-  if (!form.name.trim())  errors.name    = 'Por favor escribe tu nombre.'
+  if (!form.name.trim()) errors.name = 'Por favor escribe tu nombre.'
   if (!form.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) errors.email = 'Introduce un correo válido.'
-  if (!form.service)      errors.service = 'Selecciona una sesión.'
+  if (!form.service) errors.service = 'Selecciona una sesión.'
   return !Object.keys(errors).length
 }
+
+const loadTurnstileScript = () => {
+  return new Promise((resolve, reject) => {
+    if (window.turnstile) {
+      return resolve()
+    }
+
+    const existing = document.querySelector('script[data-turnstile]')
+    if (existing) {
+      existing.addEventListener('load', () => resolve())
+      existing.addEventListener('error', () => reject(new Error('Turnstile script failed to load')))
+      return
+    }
+
+    const script = document.createElement('script')
+    script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js'
+    script.async = true
+    script.defer = true
+    script.dataset.turnstile = 'true'
+    script.onload = () => resolve()
+    script.onerror = () => reject(new Error('Turnstile script failed to load'))
+    document.head.appendChild(script)
+  })
+}
+
+const renderTurnstile = () => {
+  if (!turnstileEnabled || !window.turnstile || !turnstileContainer.value) return
+
+  if (turnstileWidgetId.value !== null) {
+    window.turnstile.reset(turnstileWidgetId.value)
+  }
+
+  turnstileWidgetId.value = window.turnstile.render(turnstileContainer.value, {
+    sitekey: turnstileSiteKey,
+    callback: (token) => {
+      turnstileToken.value = token
+      delete errors.turnstileToken
+    },
+    'error-callback': () => {
+      errors.turnstileToken = 'Error al validar el captcha. Intenta de nuevo.'
+    },
+    'expired-callback': () => {
+      turnstileToken.value = ''
+    },
+  })
+}
+
+const requestContactToken = async () => {
+  try {
+    const response = await fetch('/api/contact-token')
+    const data = await response.json()
+    if (data.enabled && data.token) {
+      hmacToken.value = data.token
+    }
+  } catch {
+    // Degrade gracefully: if the server token endpoint is unavailable, continue without HMAC.
+  }
+}
+
+onMounted(async () => {
+  await requestContactToken()
+  if (turnstileEnabled) {
+    try {
+      await loadTurnstileScript()
+      renderTurnstile()
+    } catch {
+      errors.turnstileToken = 'No se pudo cargar el captcha. Intenta de nuevo más tarde.'
+    }
+  }
+})
 
 const handleSubmit = async () => {
   if (form.botcheck) return // Es un bot
   if (!validate()) return
+
+  if (turnstileEnabled && !turnstileToken.value) {
+    errors.turnstileToken = 'Por favor completa el captcha antes de enviar.'
+    return
+  }
 
   sending.value = true
   success.value = false
@@ -136,13 +224,19 @@ const handleSubmit = async () => {
         service: form.service,
         message: form.message,
         botcheck: form.botcheck,
-      })
+        turnstileToken: turnstileToken.value,
+        hmacToken: hmacToken.value,
+      }),
     })
     const data = await res.json()
 
     if (data.success) {
       success.value = true
       Object.assign(form, { name: '', email: '', service: '', message: '' })
+      turnstileToken.value = ''
+      if (turnstileEnabled && window.turnstile && turnstileWidgetId.value !== null) {
+        window.turnstile.reset(turnstileWidgetId.value)
+      }
       return
     }
 

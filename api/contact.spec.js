@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import handler from './contact.js'
+import { createHmacToken } from './_security.js'
 
 const jsonHeaders = {
   'content-type': 'application/json',
@@ -19,6 +20,7 @@ describe('api/contact handler', () => {
   afterEach(() => {
     vi.restoreAllMocks()
     delete process.env.WEB3FORMS_KEY
+    delete process.env.HMAC_SECRET_KEY
     delete process.env.ALLOWED_ORIGINS
   })
 
@@ -104,6 +106,69 @@ describe('api/contact handler', () => {
       success: false,
       error: 'Server is not configured properly.',
     })
+  })
+
+  it('returns 401 when HMAC is required and missing', async () => {
+    process.env.WEB3FORMS_KEY = 'test-key'
+    process.env.HMAC_SECRET_KEY = 'hmac-secret'
+    const fetchMock = vi.fn(() => Promise.resolve({ json: async () => ({ success: true }) }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const req = {
+      method: 'POST',
+      headers: jsonHeaders,
+      json: async () => ({
+        name: 'Grettel',
+        email: 'test@example.com',
+        service: 'Boudoir & Artístico',
+        message: 'Hola',
+        botcheck: false,
+      }),
+    }
+    const res = createResponse()
+
+    await handler(req, res)
+
+    expect(res.status).toHaveBeenCalledWith(401)
+    expect(res.json).toHaveBeenCalledWith({
+      success: false,
+      error: 'Missing token.',
+    })
+  })
+
+  it('forwards the request to Web3Forms when HMAC token is valid', async () => {
+    process.env.WEB3FORMS_KEY = 'test-key'
+    process.env.HMAC_SECRET_KEY = 'hmac-secret'
+    const validToken = createHmacToken(process.env.HMAC_SECRET_KEY, {
+      type: 'contact-token',
+      iat: Date.now(),
+      origin: 'http://localhost:5173',
+    })
+    const fetchMock = vi.fn(() => Promise.resolve({ json: async () => ({ success: true }) }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const req = {
+      method: 'POST',
+      headers: { ...jsonHeaders, 'x-forwarded-for': '5.5.5.5' },
+      json: async () => ({
+        name: 'Grettel',
+        email: 'test@example.com',
+        service: 'Boudoir & Artístico',
+        message: 'Hola',
+        botcheck: false,
+        hmacToken: validToken,
+      }),
+    }
+    const res = createResponse()
+
+    await handler(req, res)
+
+    expect(fetchMock).toHaveBeenCalledWith('https://api.web3forms.com/submit', expect.objectContaining({
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    }))
+    expect(res.status).toHaveBeenCalledWith(200)
+    expect(res.json).toHaveBeenCalledWith({ success: true })
   })
 
   it('enforces basic rate limiting', async () => {
