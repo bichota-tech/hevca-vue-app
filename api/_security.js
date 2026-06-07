@@ -3,7 +3,7 @@ import crypto from 'crypto'
 export const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000
 export const MAX_REQUESTS_PER_WINDOW = 8
 export const MAX_BODY_SIZE_BYTES = 10 * 1024
-export const DEFAULT_ALLOWED_ORIGINS = ['http://localhost:5173', 'http://127.0.0.1:5173']
+export const DEFAULT_ALLOWED_ORIGINS = ['http://localhost:5173', 'http://127.0.0.1:5173', 'https://hevca-vue-app.vercel.app']
 
 export const rateLimitMap = new Map()
 
