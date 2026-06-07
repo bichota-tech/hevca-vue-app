@@ -1,5 +1,7 @@
 import { extractOrigin, getAllowedOrigins, isOriginAllowed, incrementRateLimit, MAX_BODY_SIZE_BYTES, verifyHmacToken } from './_security.js'
-
+// This endpoint is responsible for handling contact form submissions. It performs several security checks, including:
+// - Method validation (only POST allowed)
+// - Content type and size validation
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST')
@@ -27,12 +29,12 @@ export default async function handler(req, res) {
   if (refererHeader && !isOriginAllowed(refererHeader, allowedOrigins)) {
     return res.status(403).json({ success: false, error: 'Referer not allowed.' })
   }
-
+// Rate limiting
   const rateLimitResult = incrementRateLimit(req)
   if (!rateLimitResult.success) {
     return res.status(rateLimitResult.status).json({ success: false, error: rateLimitResult.error })
   }
-
+// Input validation and sanitization
   const { name, email, service, message, botcheck, turnstileToken, hmacToken } = await req.json()
   const errors = {}
   const sanitizedName = typeof name === 'string' ? name.trim() : ''
@@ -44,6 +46,7 @@ export default async function handler(req, res) {
     return res.status(400).json({ success: false, error: 'Bot detected' })
   }
 
+// HMAC token validation (if secret is set)
   const TURNSTILE_SECRET_KEY = process.env.TURNSTILE_SECRET_KEY
   const HMAC_SECRET_KEY = process.env.HMAC_SECRET_KEY
 
