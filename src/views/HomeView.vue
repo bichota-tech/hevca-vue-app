@@ -8,8 +8,7 @@
 
     <!-- Intro Strip -->
     <section class="section-wrap relative overflow-hidden pt-0! pb-0!" style="background: radial-gradient(ellipse at top, rgba(188,149,54,0.08) 0%, rgba(13,13,13,1) 80%); background-attachment: fixed;">
-      <div class="page-container pt-50! pb-40! relative z-10 
-                  bg-[url('/multimedia/Frame1.png')] bg-cover bg-fixed!
+      <div class="page-container pt-50! pb-40! relative z-10 home-hero-bg
                   bg-no-repeat bg-center bg-black/50 bg-blend-multiply
                   text-center 
                   flex flex-col 
@@ -238,6 +237,21 @@ onUnmounted(() => {
   flex-direction: column;
   transition: border-color 0.3s, transform 0.3s;
 }
+.home-hero-bg {
+  background-image: url('/multimedia/Frame1.png');
+  background-size: cover;
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+@media (max-width: 767px) {
+  .home-hero-bg {
+    background-size: 100% auto;
+    background-attachment: scroll;
+  }
+}
+
 .service-card:hover {
   border-color: #bc9536;
   transform: translateY(-4px);
