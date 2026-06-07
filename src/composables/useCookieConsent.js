@@ -26,6 +26,20 @@ const setCookie = (name, value, days) => {
 
 const loadConsent = () => {
   if (typeof document === 'undefined') return
+  // Allow forcing the banner visible in deployed environments by
+  // appending `?showCookieBanner=1` to the URL. Useful for testing.
+  try {
+    const params = new URLSearchParams(window.location.search)
+    const force = params.get('showCookieBanner')
+    if (force === '1' || force === 'true') {
+      // clear any existing cookie and show banner
+      deleteCookie(COOKIE_NAME)
+      consent.value = null
+      return
+    }
+  } catch (e) {
+    // ignore
+  }
   const existing = getCookie(COOKIE_NAME)
   if (existing === 'accepted' || existing === 'declined') {
     consent.value = existing
