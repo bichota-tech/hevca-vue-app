@@ -11,17 +11,19 @@
     </main>
 
     <!-- Use v-show to avoid layout jumps when toggling footer visibility -->
-    <AppFooter v-show="!$route.meta.hideFooter" />
-  </div>
+    <AppFooter v-show="!$route.meta.hideFooter" />    <CookieConsentBanner />  </div>
 </template>
 
 <script setup>
 import { onMounted } from 'vue'
 import AppHeader from './components/AppHeader.vue'
 import AppFooter from './components/AppFooter.vue'
+import CookieConsentBanner from './components/CookieConsentBanner.vue'
+import { useCookieConsent } from './composables/useCookieConsent.js'
 import { useSiteSettings } from './composables/useSiteSettings.js'
 
 const { load: loadSettings } = useSiteSettings()
+const { loadConsent } = useCookieConsent()
 
 onMounted(async () => {
   try {
